@@ -431,7 +431,6 @@ void GfxOpenGL::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face)
 	int *indices = (int*)face->_indexes;
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
 
 	glBegin(GL_TRIANGLES);
@@ -455,7 +454,6 @@ void GfxOpenGL::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face)
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_ALPHA_TEST);
-	glEnable(GL_LIGHTING);
 	glColor3f(1.0f,1.0f,1.0f);
 }
 	
