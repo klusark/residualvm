@@ -43,6 +43,13 @@ public:
 
 	void translate(const Vector3d &v);
 
+	void invertAffineOrthonormal();
+
+	void setCol(int col, const Math::Vector3d &vec);
+	void setRow(int row, const Math::Vector3d &vec);
+
+	void lookAtMatrix(const Vector3d &localForward, const Vector3d &targetDirection,
+						   const Vector3d &localUp, const Vector3d &worldUp);
 };
 
 typedef Matrix<4, 4> Matrix4;
