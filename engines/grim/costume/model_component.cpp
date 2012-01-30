@@ -20,7 +20,7 @@
  *
  */
 
-#include "engines/grim/debug.h"
+
 #include "engines/grim/model.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/grim.h"
@@ -32,6 +32,7 @@
 #include "engines/grim/costume/model_component.h"
 #include "engines/grim/costume/main_model_component.h"
 #include "engines/grim/costume/mesh_component.h"
+#include "engines/grim/debug.h"
 
 namespace Grim {
 	
@@ -85,7 +86,7 @@ void ModelComponent::init() {
 		if (!cm) {
 			Debug::warning(Debug::Costumes, "No colormap specified for %s, using %s", _filename.c_str(), DEFAULT_COLORMAP);
 
-			cm = g_resourceloader->getColormap(DEFAULT_COLORMAP);
+			cm = CMap::create(DEFAULT_COLORMAP);
 		}
 
 		// If we're the child of a mesh component, put our nodes in the

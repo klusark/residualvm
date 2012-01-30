@@ -13,7 +13,7 @@
 
 #include "common/endian.h"
 
-#include "engines/grim/debug.h"
+
 #include "engines/grim/actor.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/lipsync.h"
@@ -34,7 +34,7 @@
 #include "engines/grim/lua/ltm.h"
 #include "engines/grim/lua/lualib.h"
 #include "engines/grim/lua/luadebug.h"
-
+#include "engines/grim/debug.h"
 namespace Grim {
 
 GCnode rootproto;

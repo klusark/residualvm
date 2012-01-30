@@ -20,7 +20,7 @@
  *
  */
 
-#include "engines/grim/debug.h"
+
 #include "engines/grim/savegame.h"
 #include "engines/grim/model.h"
 #include "engines/grim/material.h"
@@ -28,7 +28,7 @@
 #include "engines/grim/costume/mesh_component.h"
 #include "engines/grim/costume/model_component.h"
 #include "engines/grim/costume/sprite_component.h"
-
+#include "engines/grim/debug.h"
 namespace Grim {
 
 SpriteComponent::SpriteComponent(Component *p, int parentID, const char *filename, tag32 t) :
@@ -70,7 +70,8 @@ void SpriteComponent::init() {
 		sscanf(comma, ",%d,%d,%d,%d,%d", &width, &height, &x, &y, &z);
 
 		_sprite = new Sprite;
-		_sprite->_material = g_resourceloader->loadMaterial(name, getCMap());
+		_sprite->_material = Material::create(name);
+		_sprite->_material->reload(getCMap());
 		_sprite->_width = (float)width / 100.0f;
 		_sprite->_height = (float)height / 100.0f;
 		_sprite->_pos.set((float)x / 100.0f, (float)y / 100.0f, (float)z / 100.0f);

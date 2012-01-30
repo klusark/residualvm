@@ -511,7 +511,7 @@ void LuaBase::setTextObjectParams(TextObjectCommon *textObject, lua_Object table
 				}
 			}
 			if (!font) {
-				font = g_resourceloader->loadFont(str);
+				font = Font::create(str);
 			}
 
 			textObject->setFont(font);

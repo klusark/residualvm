@@ -33,9 +33,16 @@
 
 namespace Grim {
 
-KeyframeAnim::KeyframeAnim(const Common::String &fname, Common::SeekableReadStream *data) :
-	Object(), _fname(fname) {
+KeyframeAnim::KeyframeAnim(const Common::String &name) :
+	Object(), LoadableResource<KeyframeAnim, KeyframeAnimData>(name)  {
 
+
+}
+
+KeyframeAnimData::KeyframeAnimData() {
+}
+
+bool KeyframeAnimData::load(Common::SeekableReadStream *data) {
 	uint32 tag = data->readUint32BE();
 	if (tag == MKTAG('F','Y','E','K'))
 		loadBinary(data);
@@ -44,12 +51,13 @@ KeyframeAnim::KeyframeAnim(const Common::String &fname, Common::SeekableReadStre
 		TextSplitter ts(data);
 		loadText(ts);
 	}
+	return true;
 }
 
-void KeyframeAnim::loadBinary(Common::SeekableReadStream *data) {
+void KeyframeAnimData::loadBinary(Common::SeekableReadStream *data) {
 	// First four bytes are the FYEK Keyframe identifier code
 	// Next 36 bytes are the filename
-	Debug::debug(Debug::Keyframes, "Loading Keyframe '%s'.", _fname.c_str());
+	//Debug::debug(Debug::Keyframes, "Loading Keyframe '%s'.", _fname.c_str());
 	// Next four bytes are the flags
 	data->seek(40, SEEK_SET);
 	_flags = data->readUint32LE();
@@ -122,7 +130,7 @@ void KeyframeAnim::loadBinary(Common::SeekableReadStream *data) {
 	}
 }
 
-void KeyframeAnim::loadText(TextSplitter &ts) {
+void KeyframeAnimData::loadText(TextSplitter &ts) {
 	ts.expectString("section: header");
 	ts.scanString("flags %x", 1, &_flags);
 	ts.scanString("type %x", 1, &_type);
@@ -155,15 +163,14 @@ void KeyframeAnim::loadText(TextSplitter &ts) {
 	}
 }
 
-KeyframeAnim::~KeyframeAnim() {
+KeyframeAnimData::~KeyframeAnimData() {
 	for (int i = 0; i < _numJoints; i++)
 		delete _nodes[i];
 	delete[] _nodes;
 	delete[] _markers;
-	g_resourceloader->uncacheKeyframe(this);
 }
 
-bool KeyframeAnim::animate(ModelNode *nodes, int num, float time, float fade, bool tagged) const {
+bool KeyframeAnimData::animate(ModelNode *nodes, int num, float time, float fade, bool tagged) const {
 	// Without this sending the bread down the tube in "mo" often crashes,
 	// because it goes outside the bounds of the array of the nodes.
 	if (num >= _numJoints)
@@ -181,7 +188,7 @@ bool KeyframeAnim::animate(ModelNode *nodes, int num, float time, float fade, bo
 	}
 }
 
-int KeyframeAnim::getMarker(float startTime, float stopTime) const {
+int KeyframeAnimData::getMarker(float startTime, float stopTime) const {
 	if (!_markers)
 		return 0;
 
@@ -197,7 +204,7 @@ int KeyframeAnim::getMarker(float startTime, float stopTime) const {
 	return 0;
 }
 
-void KeyframeAnim::KeyframeEntry::loadBinary(const char *data) {
+void KeyframeAnimData::KeyframeEntry::loadBinary(const char *data) {
 	_frame = get_float(data);
 	_flags = READ_LE_UINT32(data + 4);
 	_pos = Math::Vector3d::get_vector3d(data + 8);
@@ -210,7 +217,7 @@ void KeyframeAnim::KeyframeEntry::loadBinary(const char *data) {
 	_droll = get_float(data + 52);
 }
 
-void KeyframeAnim::KeyframeNode::loadBinary(Common::SeekableReadStream *data, char *meshName) {
+void KeyframeAnimData::KeyframeNode::loadBinary(Common::SeekableReadStream *data, char *meshName) {
 	memcpy(_meshName, meshName, 32);
 
 	_numEntries = data->readUint32LE();
@@ -223,7 +230,7 @@ void KeyframeAnim::KeyframeNode::loadBinary(Common::SeekableReadStream *data, ch
 	}
 }
 
-void KeyframeAnim::KeyframeNode::loadText(TextSplitter &ts) {
+void KeyframeAnimData::KeyframeNode::loadText(TextSplitter &ts) {
 	ts.scanString("mesh name %s", 1, _meshName);
 	ts.scanString("entries %d", 1, &_numEntries);
 	_entries = new KeyframeEntry[_numEntries];
@@ -246,11 +253,11 @@ void KeyframeAnim::KeyframeNode::loadText(TextSplitter &ts) {
 	}
 }
 
-KeyframeAnim::KeyframeNode::~KeyframeNode() {
+KeyframeAnimData::KeyframeNode::~KeyframeNode() {
 	delete[] _entries;
 }
 
-bool KeyframeAnim::KeyframeNode::animate(ModelNode &node, float frame, float fade, bool useDelta) const {
+bool KeyframeAnimData::KeyframeNode::animate(ModelNode &node, float frame, float fade, bool useDelta) const {
 	if (_numEntries == 0)
 		return false;
 

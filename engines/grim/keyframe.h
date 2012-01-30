@@ -26,6 +26,7 @@
 #include "math/vector3d.h"
 
 #include "engines/grim/object.h"
+#include "engines/grim/tmpresource.h"
 
 namespace Common {
 class SeekableReadStream;
@@ -36,26 +37,25 @@ namespace Grim {
 class ModelNode;
 class TextSplitter;
 
-class KeyframeAnim : public Object {
+class KeyframeAnimData : public SharedData<KeyframeAnimData>
+{
 public:
-	KeyframeAnim(const Common::String &filename, Common::SeekableReadStream *data);
-	~KeyframeAnim();
+	KeyframeAnimData();
+	~KeyframeAnimData();
 
 	void loadBinary(Common::SeekableReadStream *data);
 	void loadText(TextSplitter &ts);
+	bool load(Common::SeekableReadStream *data);
+	float getLength() const { return _numFrames / _fps; }
+
 	bool animate(ModelNode *nodes, int num, float time, float fade, bool tagged) const;
 	int getMarker(float startTime, float stopTime) const;
 
-	float getLength() const { return _numFrames / _fps; }
-	const Common::String &getFilename() const { return _fname; }
-
-private:
-	Common::String _fname;
 	unsigned int _flags;
 	/**
 	 * A bitfield ID which specifies which joints of the skeleton hierarchy this
 	 * KeyFrameAnim can animate on. This is ANDed against the _type of the ModelNode
-	 * to test whether this KeyFrameAnim can animate that ModelNode, or if it is to 
+	 * to test whether this KeyFrameAnim can animate that ModelNode, or if it is to
 	 * be ignored.
 	 */
 	unsigned int _type;
@@ -91,6 +91,18 @@ private:
 	};
 
 	KeyframeNode **_nodes;
+};
+
+class KeyframeAnim : public Object, public LoadableResource<KeyframeAnim, KeyframeAnimData> {
+public:
+	KeyframeAnim(const Common::String &filename);
+
+	bool animate(ModelNode *nodes, int num, float time, float fade, bool tagged) const { requireLoaded(); return _data->animate(nodes, num, time, fade, tagged); }
+	int getMarker(float startTime, float stopTime) const { requireLoaded(); return _data->getMarker(startTime, stopTime); }
+
+	float getLength() const { requireLoaded(); return _data->getLength(); }
+
+
 };
 
 } // end of namespace Grim

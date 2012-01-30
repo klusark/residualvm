@@ -39,7 +39,7 @@ Animation::Animation(const Common::String &keyframe, AnimManager *manager, int p
 	_time(-1),
 	_fade(1.f),
 	_fadeMode(None) {
-	_keyframe = g_resourceloader->getKeyframe(keyframe);
+	_keyframe = KeyframeAnim::create(keyframe);
 }
 
 Animation::~Animation() {

@@ -24,6 +24,7 @@
 #define GRIM_MATERIAL_H
 
 #include "engines/grim/object.h"
+#include "engines/grim/tmpresource.h"
 
 namespace Grim {
 
@@ -40,29 +41,27 @@ public:
 	char *_data;
 };
 
-class MaterialData {
+class MaterialData : public SharedData<MaterialData>  {
 public:
-	MaterialData(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap);
+	MaterialData();
 	~MaterialData();
 
-	static MaterialData *getMaterialData(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap);
-	static Common::List<MaterialData *> *_materials;
-
-	Common::String _fname;
-	const ObjectPtr<CMap> _cmap;
+	//Common::String _fname;
+	ObjectPtr<CMap> _cmap;
 	int _numImages;
 	Texture *_textures;
-	int _refCount;
 
+	bool load(Common::SeekableReadStream *data);
 private:
-	void initGrim(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap);
-	void initEMI(const Common::String &filename, Common::SeekableReadStream *data);
+	bool initGrim(Common::SeekableReadStream *data, CMap *cmap);
+	bool initEMI(Common::SeekableReadStream *data);
 };
 
-class Material : public Object {
+class Material : public Object, public LoadableResource<Material, MaterialData> {
 public:
 	// Load a texture from the given data.
-	Material(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap);
+	//Material(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap);
+	Material(const Common::String &filename);
 
 	void reload(CMap *cmap);
 	// Load this texture into the GL context
@@ -74,13 +73,15 @@ public:
 	int getNumTextures() const;
 	int getActiveTexture() const;
 
-	const Common::String &getFilename() const;
+	//const Common::String &getFilename() const;
 	MaterialData *getData() const;
 
 	~Material();
 
+	void postLoad() {}
+
 private:
-	MaterialData *_data;
+	//MaterialData *_data;
 	int _currImage;
 };
 

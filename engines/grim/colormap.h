@@ -24,6 +24,7 @@
 #define GRIM_COLORMAP_H
 
 #include "engines/grim/object.h"
+#include "engines/grim/tmpresource.h"
 
 namespace Common {
 class SeekableReadStream;
@@ -31,18 +32,24 @@ class SeekableReadStream;
 
 namespace Grim {
 
-class CMap : public Object {
+class CMapData : public SharedData<CMapData> {
 public:
 	// Load a colormap from the given data.
-	CMap(const Common::String &fileName, Common::SeekableReadStream *data);
-	~CMap();
-	const Common::String &getFilename() const { return _fname; }
+	CMapData();
+
+	bool load(Common::SeekableReadStream *data);
 
 	// The color data, in RGB format
 	char _colors[256 * 3];
-	Common::String _fname;
 
 	bool operator==(const CMap &c) const;
+};
+
+class CMap : public Object, public LoadableResource<CMap, CMapData> {
+public:
+	CMap(const Common::String &name) : LoadableResource<CMap, CMapData>(name) {}
+	//bool operator==(const CMap &c) const { return true;}
+	const char *getColors() const { requireLoaded(); return _data->_colors; };
 };
 
 } // end of namespace Grim

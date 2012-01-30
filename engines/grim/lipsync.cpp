@@ -27,19 +27,19 @@
 
 namespace Grim {
 
-template class ObjectPtr<LipSync>;
 
 // A new define that'll be around when theres a configure script :)
 #undef DEBUG_VERBOSE
 
-LipSync::LipSync(const Common::String &filename, Common::SeekableReadStream *data) :
-	Object() {
-	_fname = filename;
+LipSyncData::LipSyncData() {
+}
+
+bool LipSyncData::load(Common::SeekableReadStream *data) {
 	uint16 readPhoneme;
 	int j;
 
 	if (data->readUint32BE() != MKTAG('L','I','P','!')) {
-		error("Invalid file format in %s", _fname.c_str());
+		//error("Invalid file format in %s", _fname.c_str());
 	} else {
 		_numEntries = (data->size() - 8) / 4;
 
@@ -65,7 +65,7 @@ LipSync::LipSync(const Common::String &filename, Common::SeekableReadStream *dat
 				}
 
 				if (j >= _animTableSize) {
-					warning("Unknown phoneme: 0x%X in file %s", readPhoneme, _fname.c_str());
+					//warning("Unknown phoneme: 0x%X in file %s", readPhoneme, _fname.c_str());
 					_entries[i].anim = 1;
 				}
 
@@ -76,15 +76,14 @@ LipSync::LipSync(const Common::String &filename, Common::SeekableReadStream *dat
 #endif
 		}
 	}
-
+	return true;
 }
 
-LipSync::~LipSync() {
+LipSyncData::~LipSyncData() {
 	delete[] _entries;
-	g_resourceloader->uncacheLipSync(this);
 }
 
-int LipSync::getAnim(int pos) {
+int LipSyncData::getAnim(int pos) const {
 	int frame1, frame2;
 
 	// tune a bit to prevent internal imuse drift
@@ -106,7 +105,7 @@ int LipSync::getAnim(int pos) {
 	return -1;
 }
 
-const LipSync::PhonemeAnim LipSync::_animTable[] = {
+const LipSyncData::PhonemeAnim LipSyncData::_animTable[] = {
 	{0x005F, 0}, {0x0251, 1}, {0x0061, 1}, {0x00E6, 1}, {0x028C, 8},
 	{0x0254, 1}, {0x0259, 1}, {0x0062, 6}, {0x02A7, 2}, {0x0064, 2},
 	{0x00F0, 5}, {0x025B, 8}, {0x0268, 8}, {0x025A, 9}, {0x025D, 9},
@@ -119,6 +118,6 @@ const LipSync::PhonemeAnim LipSync::_animTable[] = {
 	{0x0292, 2}, {0x002E, 2}
 };
 
-const int LipSync::_animTableSize = sizeof(LipSync::_animTable) / sizeof(LipSync::_animTable[0]);
+const int LipSyncData::_animTableSize = sizeof(LipSyncData::_animTable) / sizeof(LipSyncData::_animTable[0]);
 
 } // end of namespace Grim

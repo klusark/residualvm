@@ -27,17 +27,15 @@
 #include "graphics/colormasks.h"
 #include "graphics/pixelbuffer.h"
 
-#include "engines/grim/debug.h"
+
 #include "engines/grim/grim.h"
 #include "engines/grim/bitmap.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/gfx_base.h"
-
+#include "engines/grim/debug.h"
 namespace Grim {
 
 static bool decompress_codec3(const char *compressed, char *result, int maxBytes);
-
-Common::HashMap<Common::String, BitmapData *> *BitmapData::_bitmaps = NULL;
 
 // Helper function for makeBitmapFromTile
 char *getLine(int lineNum, char *data, unsigned int width, int bpp) {
@@ -94,44 +92,30 @@ char *makeBitmapFromTile(char **bits, int width, int height, int bpp) {
 
 #endif
 
-BitmapData *BitmapData::getBitmapData(const Common::String &fname, Common::SeekableReadStream *data) {
-	Common::String str(fname);
-	if (_bitmaps && _bitmaps->contains(str)) {
-		BitmapData *b = (*_bitmaps)[str];
-		++b->_refCount;
-		return b;
-	}
-
-	BitmapData *b = new BitmapData(fname, data);
-	if (!_bitmaps) {
-		_bitmaps = new Common::HashMap<Common::String, BitmapData *>();
-	}
-	(*_bitmaps)[str] = b;
-	return b;
+BitmapData::BitmapData() {
+	_data = 0;
 }
 
-BitmapData::BitmapData(const Common::String &fname, Common::SeekableReadStream *data) {
-	_fname = fname;
-	_refCount = 1;
-	_data = 0;
-
+bool BitmapData::load(Common::SeekableReadStream *data) {
+	if (!data) {
+		return true;
+	}
 	uint32 tag = data->readUint32BE();
 	switch(tag) {
 		case(MKTAG('B','M',' ',' ')):				//Grim bitmap
-			loadGrimBm(fname, data);
-			break;
+			return loadGrimBm(data);
 		case(MKTAG('T','I','L','0')):				// MI4 bitmap
-			loadTile(fname, data);
-			break;
+			return loadTile(data);
 		default:
-			if (!loadTGA(fname, data))	// Try to load as TGA.
+			if (!loadTGA(data))	// Try to load as TGA.
 				Debug::error(Debug::Bitmaps, "Invalid magic loading bitmap");
-			break;
 	}
+	delete[] _data;
+	_data = NULL;
+	return false;
 }
 
-
-bool BitmapData::loadGrimBm(const Common::String &fname, Common::SeekableReadStream *data) {
+bool BitmapData::loadGrimBm(Common::SeekableReadStream *data) {
 	uint32 tag2 = data->readUint32BE();
 	if(tag2 != (MKTAG('F','\0','\0','\0')))
 		return false;
@@ -175,7 +159,7 @@ bool BitmapData::loadGrimBm(const Common::String &fname, Common::SeekableReadStr
 			bool success = decompress_codec3(compressed, (char *)_data[i].getRawBuffer(), _bpp / 8 * _width * _height);
 			delete[] compressed;
 			if (!success)
-				warning(".. when loading image %s.\n", fname.c_str());
+				warning(".. when loading image %s.\n", "BAD STUFF");
 		} else
 			Debug::error(Debug::Bitmaps, "Unknown image codec in BitmapData ctor!");
 
@@ -199,8 +183,6 @@ bool BitmapData::loadGrimBm(const Common::String &fname, Common::SeekableReadStr
 }
 
 BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const char *fname) {
-	_fname = fname;
-	_refCount = 1;
 	Debug::debug(Debug::Bitmaps, "New bitmap loaded: %s\n", fname);
 	_numImages = 1;
 	_x = 0;
@@ -220,30 +202,17 @@ BitmapData::BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const cha
 	g_driver->createBitmap(this);
 }
 
-BitmapData::BitmapData() :
-	_numImages(0), _width(0), _height(0), _x(0), _y(0), _format(0), _numTex(0),
-	_bpp(0), _colorFormat(0), _texIds(0), _hasTransparency(false), _data(NULL), _refCount(1) {
-}
+
 
 BitmapData::~BitmapData() {
-	if (_data) {
-		delete[] _data;
-		_data = NULL;
+	//if (_data) {
 
-		g_driver->destroyBitmap(this);
-	}
-	if (_bitmaps) {
-		if (_bitmaps->contains(_fname)) {
-			_bitmaps->erase(_fname);
-		}
-		if (_bitmaps->empty()) {
-			delete _bitmaps;
-			_bitmaps = NULL;
-		}
-	}
+
+	g_driver->destroyBitmap(this);
+	//}
 }
 
-bool BitmapData::loadTGA(const Common::String &fname, Common::SeekableReadStream *data) {
+bool BitmapData::loadTGA(Common::SeekableReadStream *data) {
 	data->seek(0, SEEK_SET);
 	if (data->readByte() != 0)	// Verify that description-field is empty
 		return false;
@@ -301,7 +270,7 @@ bool BitmapData::loadTGA(const Common::String &fname, Common::SeekableReadStream
 	return true;
 }
 
-bool BitmapData::loadTile(const Common::String &fname, Common::SeekableReadStream *o) {
+bool BitmapData::loadTile(Common::SeekableReadStream *o) {
 #ifdef ENABLE_MONKEY4
 	_x = 0;
 	_y = 0;
@@ -371,29 +340,31 @@ const Graphics::PixelBuffer &BitmapData::getImageData(int num) const {
 
 // Bitmap
 
-Bitmap::Bitmap(const Common::String &fname, Common::SeekableReadStream *data) :
-		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
-	_data = BitmapData::getBitmapData(fname, data);
-	_x = _data->_x;
-	_y = _data->_y;
+Bitmap::Bitmap(const Common::String &name) : LoadableResource<Bitmap, BitmapData>(name) {
 	_currImage = 1;
+	_x = 0;
+	_y = 0;
 }
-
 Bitmap::Bitmap(const Graphics::PixelBuffer &buf, int w, int h, const char *fname) :
-		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
+		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>(), LoadableResource<Bitmap, BitmapData>() {
 	_data = new BitmapData(buf, w, h, fname);
 	_x = _data->_x;
 	_y = _data->_y;
 	_currImage = 1;
 }
-
+		
 Bitmap::Bitmap() :
-		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>() {
-	_data = new BitmapData();
+		PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>(), LoadableResource<Bitmap, BitmapData>() {
+
+}
+
+void Bitmap::postLoad() {
+	_x = _data->_x;
+	_y = _data->_y;
 }
 
 void Bitmap::saveState(SaveGame *state) const {
-	state->writeString(getFilename());
+	state->writeString(_name);
 
 	state->writeLESint32(getActiveImage());
 	state->writeLESint32(getX());
@@ -401,21 +372,21 @@ void Bitmap::saveState(SaveGame *state) const {
 }
 
 void Bitmap::restoreState(SaveGame *state) {
-	freeData();
-
 	Common::String fname = state->readString();
-	Common::SeekableReadStream *data = g_resourceloader->openNewStreamFile(fname.c_str(), true);
-	_data = BitmapData::getBitmapData(fname, data);
-	delete data;
+	Bitmap *b = Bitmap::create(fname);
+	_data = b->_data;
+	delete b;
 
 	_currImage = state->readLESint32();
 	_x = state->readLESint32();
 	_y = state->readLESint32();
 }
 
-void Bitmap::draw() const {
+void Bitmap::draw() {
 	if (_currImage == 0)
 		return;
+	
+	requireLoaded();
 
 	g_driver->drawBitmap(this);
 }
@@ -423,22 +394,13 @@ void Bitmap::draw() const {
 void Bitmap::setActiveImage(int n) {
 	assert(n >= 0);
 	if ((n - 1) >= _data->_numImages) {
-		warning("Bitmap::setNumber: no anim image: %d. (%s)", n, _data->_fname.c_str());
+		warning("Bitmap::setNumber: no anim image: %d. (%s)", n, _name.c_str());
 	} else {
 		_currImage = n;
 	}
 }
 
-void Bitmap::freeData() {
-	--_data->_refCount;
-	if (_data->_refCount < 1) {
-		delete _data;
-		_data = 0;
-	}
-}
-
 Bitmap::~Bitmap() {
-	freeData();
 }
 
 const Graphics::PixelFormat &Bitmap::getPixelFormat(int num) const {

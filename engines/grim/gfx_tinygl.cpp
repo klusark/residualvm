@@ -938,7 +938,7 @@ void GfxTinyGL::createMaterial(Texture *material, const char *data, const CMap *
 						texdatapos[3] = '\xff'; // fully opaque
 					}
 				} else {
-					memcpy(texdatapos, cmap->_colors + 3 * (col), 3);
+					memcpy(texdatapos, cmap->getColors() + 3 * (col), 3);
 					texdatapos[3] = '\xff'; // fully opaque
 				}
 				texdatapos += 4;

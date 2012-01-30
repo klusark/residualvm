@@ -475,7 +475,7 @@ void Costume::setColormap(const Common::String &map) {
 	// see where raoul is gone in hh.set
 	if (!map.size())
 		return;
-	_cmap = g_resourceloader->getColormap(map);
+	_cmap = CMap::create(map);
 	for (int i = 0; i < _numComponents; i++)
 		_components[i]->setColormap(NULL);
 }

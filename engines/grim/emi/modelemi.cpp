@@ -194,7 +194,7 @@ void EMIModel::prepare() {
 	for (uint32 i = 0; i < _numTextures; i++) {
 		// HACK: As we dont know what specialty-textures are yet, we skip loading them
 		if (!_texNames[i].contains("specialty"))
-			_mats[i] = g_resourceloader->loadMaterial(_texNames[i].c_str(), NULL);
+			_mats[i] = Material::create(_texNames[i]);
 	}
 	prepareForRender();
 }

@@ -259,7 +259,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 	if (savedState->readBool()) {
 		Common::String fn = savedState->readString();
-		_lipSync = g_resourceloader->getLipSync(fn);
+		_lipSync = LipSync::create(fn);
 	} else {
 		_lipSync = NULL;
 	}
@@ -321,7 +321,7 @@ bool Actor::restoreState(SaveGame *savedState) {
 
 		size = savedState->readLEUint32();
 		Set *scene = NULL;
-		for (int j = 0; j < size; ++j) {
+		for (uint j = 0; j < size; ++j) {
 			Common::String setName = savedState->readString();
 			Common::String secName = savedState->readString();
 			if (!scene || scene->getName() != setName) {
@@ -800,7 +800,7 @@ void Actor::sayLine(const char *msgId, bool background) {
 		// Also, some lip sync files have no entries
 		// In these cases, revert to using the mumble chore.
 		if (g_grim->getSpeechMode() != GrimEngine::TextOnly)
-			_lipSync = g_resourceloader->getLipSync(soundLip);
+			_lipSync = LipSync::create(soundLip);
 		// If there's no lip sync file then load the mumble chore if it exists
 		// (the mumble chore doesn't exist with the cat races announcer)
 		if (!_lipSync)

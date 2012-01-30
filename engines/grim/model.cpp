@@ -104,7 +104,6 @@ Model::~Model() {
 	delete[] _materialsShared;
 	delete[] _geosets;
 	delete[] _rootHierNode;
-	g_resourceloader->uncacheModel(this);
 }
 
 void Model::loadEMI(Common::SeekableReadStream *data) {
@@ -283,7 +282,9 @@ void Model::loadMaterial(int index, CMap *cmap) {
 		if (mat && cmap->getFilename() == _cmap->getFilename()) {
 			_materials[index] = mat;
 		} else {
-			_materials[index] = g_resourceloader->loadMaterial(_materialNames[index], cmap);
+			
+			_materials[index] = Material::create(_materialNames[index]);//g_resourceloader->loadMaterial(_materialNames[index], cmap);
+			_materials[index]->reload(cmap);
 		}
 		_materialsShared[index] = false;
 	}

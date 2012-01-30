@@ -32,19 +32,21 @@
 
 namespace Grim {
 
-Common::List<MaterialData *> *MaterialData::_materials = NULL;
+MaterialData::MaterialData() :
+	_cmap(0) {
 
-MaterialData::MaterialData(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap) :
-	_fname(filename), _cmap(cmap), _refCount(1) {
-
-	if (g_grim->getGameType() == GType_MONKEY4) {
-		initEMI(filename, data);
-	} else {
-		initGrim(filename, data, cmap);
-	}
 }
 
-void MaterialData::initGrim(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap) {
+bool MaterialData::load(Common::SeekableReadStream *data) {
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		return initEMI(data);
+	} else {
+		return initGrim(data, _cmap);
+	}
+	return false;
+}
+
+bool MaterialData::initGrim(Common::SeekableReadStream *data, CMap *cmap) {
 	uint32 tag = data->readUint32BE();
 	if (tag != MKTAG('M','A','T',' '))
 		error("invalid magic loading texture");
@@ -73,14 +75,15 @@ void MaterialData::initGrim(const Common::String &filename, Common::SeekableRead
 		t->_colorFormat = BM_RGBA;
 		t->_data = NULL;
 		if (t->_width == 0 || t->_height == 0) {
-			Debug::warning(Debug::Materials, "skip load texture: bad texture size (%dx%d) for texture %d of material %s",
-						t->_width, t->_height, i, _fname.c_str());
+	//		Debug::warning(Debug::Materials, "skip load texture: bad texture size (%dx%d) for texture %d of material %s",
+//						t->_width, t->_height, i, _fname.c_str());
 			break;
 		}
 		t->_data = new char[t->_width * t->_height];
 		data->seek(12, SEEK_CUR);
 		data->read(t->_data, t->_width * t->_height);
 	}
+	return true;
 }
 
 void loadTGA(Common::SeekableReadStream *data, Texture *t) {
@@ -129,10 +132,10 @@ void loadTGA(Common::SeekableReadStream *data, Texture *t) {
 	}
 }
 	
-void MaterialData::initEMI(const Common::String &filename, Common::SeekableReadStream *data) {
+bool MaterialData::initEMI(Common::SeekableReadStream *data) {
 	Common::Array<Common::String> texFileNames;
 	char readFileName[64];
-
+	Common::String filename = ".sur";
 	if (filename.hasSuffix(".sur")) {  // This expects that we want all the materials in the sur-file
 		TextSplitter *ts = new TextSplitter(data);
 		ts->setLineNumber(2); // Skip copyright-line
@@ -149,7 +152,7 @@ void MaterialData::initEMI(const Common::String &filename, Common::SeekableReadS
 		_textures = new Texture[texFileNames.size()];
 		for (uint i = 0; i < texFileNames.size(); i++) {
 			warning("SUR-file texture: %s", texFileNames[i].c_str());
-			texData = g_resourceloader->openNewStreamFile(texFileNames[i].c_str(), true);
+			texData = g_resourceloader->openNewStreamFile(texFileNames[i].c_str());
 			if (!texData) {
 				warning("Couldn't find tex-file: %s", texFileNames[i].c_str());
 				_textures[i]._width = 0;
@@ -162,26 +165,20 @@ void MaterialData::initEMI(const Common::String &filename, Common::SeekableReadS
 		}
 		_numImages = texFileNames.size();
 		delete ts;
-		return;
 	} else if(filename.hasSuffix(".tga")) {
 		_numImages = 1;
 		_textures = new Texture();
 		loadTGA(data, _textures);
 		//	texFileNames.push_back(filename);
-		return;
 		
 	} else {
 		warning("Unknown material-format: %s", filename.c_str());
+		return false;
 	}
+	return true;
 }
 
 MaterialData::~MaterialData() {
-	_materials->remove(this);
-	if (_materials->empty()) {
-		delete _materials;
-		_materials = NULL;
-	}
-
 	for (int i = 0; i < _numImages; ++i) {
 		Texture *t = _textures + i;
 		if (t->_width && t->_height && t->_texture)
@@ -191,7 +188,7 @@ MaterialData::~MaterialData() {
 	delete[] _textures;
 }
 
-MaterialData *MaterialData::getMaterialData(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap) {
+/*MaterialData *MaterialData::getMaterialData(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap) {
 	if (!_materials) {
 		_materials = new Common::List<MaterialData *>();
 	}
@@ -211,15 +208,17 @@ MaterialData *MaterialData::getMaterialData(const Common::String &filename, Comm
 	MaterialData *m = new MaterialData(filename, data, cmap);
 	_materials->push_back(m);
 	return m;
-}
+	return 0;
+}*/
 
-Material::Material(const Common::String &filename, Common::SeekableReadStream *data, CMap *cmap) :
-		Object(), _currImage(0) {
-	_data = MaterialData::getMaterialData(filename, data, cmap);
+Material::Material(const Common::String &filename) :
+		Object(), _currImage(0), LoadableResource<Material, MaterialData>(filename) {
+	//_data = MaterialData::getMaterialData(filename, data, cmap);
 }
 
 void Material::reload(CMap *cmap) {
-	Common::String fname = _data->_fname;
+	_data->_cmap = cmap;
+/*	Common::String fname = _data->_fname;
 	--_data->_refCount;
 	if (_data->_refCount < 1) {
 		delete _data;
@@ -229,10 +228,11 @@ void Material::reload(CMap *cmap) {
 	// Steal the data from the new material and discard it.
 	_data = m->_data;
 	++_data->_refCount;
-	delete m;
+	delete m;*/
 }
 
 void Material::select() const {
+	_data->requireLoaded();
 	Texture *t = _data->_textures + _currImage;
 	if (t->_width && t->_height) {
 		if (!t->_texture) {
@@ -245,10 +245,6 @@ void Material::select() const {
 }
 
 Material::~Material() {
-	--_data->_refCount;
-	if (_data->_refCount < 1) {
-		delete _data;
-	}
 }
 
 void Material::setActiveTexture(int n) {
@@ -261,10 +257,6 @@ int Material::getNumTextures() const {
 
 int Material::getActiveTexture() const {
 	return _currImage;
-}
-
-const Common::String &Material::getFilename() const {
-	return _data->_fname;
 }
 
 MaterialData *Material::getData() const {

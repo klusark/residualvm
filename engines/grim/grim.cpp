@@ -69,6 +69,10 @@
 #include "engines/grim/set.h"
 #include "engines/grim/sound.h"
 #include "engines/grim/stuffit.h"
+#include "engines/grim/keyframe.h"
+#include "engines/grim/lipsync.h"
+#include "engines/grim/colormap.h"
+#include "engines/grim/material.h"
 
 #include "engines/grim/imuse/imuse.h"
 
@@ -256,11 +260,11 @@ Common::Error GrimEngine::run() {
 
 	Bitmap *splash_bm = NULL;
 	if (!(_gameFlags & ADGF_DEMO) && getGameType() == GType_GRIM)
-		splash_bm = g_resourceloader->loadBitmap("splash.bm");
+		splash_bm = Bitmap::create("splash.bm");
 	else if ((_gameFlags & ADGF_DEMO) && getGameType() == GType_MONKEY4)
-		splash_bm = g_resourceloader->loadBitmap("splash.til");
+		splash_bm = Bitmap::create("splash.til");
 	else if (getGamePlatform() == Common::kPlatformPS2 && getGameType() == GType_MONKEY4)
-		splash_bm = g_resourceloader->loadBitmap("load.tga");
+		splash_bm = Bitmap::create("load.tga");
 
 	g_driver->clearScreen();
 
@@ -360,24 +364,24 @@ void GrimEngine::handleDebugLoadResource() {
 
 	buf[i] = '\0';
 	if (strstr(buf, ".key"))
-		resource = (void *)g_resourceloader->loadKeyframe(buf);
+		resource = KeyframeAnim::create(buf);
 	else if (strstr(buf, ".zbm") || strstr(buf, ".bm"))
-		resource = (void *)g_resourceloader->loadBitmap(buf);
+		resource = (void *)Bitmap::create(buf);
 	else if (strstr(buf, ".cmp"))
-		resource = (void *)g_resourceloader->loadColormap(buf);
+		resource = (void *)CMap::create(buf);
 	else if (strstr(buf, ".cos"))
 		resource = (void *)g_resourceloader->loadCostume(buf, NULL);
 	else if (strstr(buf, ".lip"))
-		resource = (void *)g_resourceloader->loadLipSync(buf);
+		resource = (void *)LipSync::create(buf);
 	else if (strstr(buf, ".snm"))
 		resource = (void *)g_movie->play(buf, false, 0, 0);
 	else if (strstr(buf, ".wav") || strstr(buf, ".imu")) {
 		g_imuse->startSfx(buf);
 		resource = (void *)1;
 	} else if (strstr(buf, ".mat")) {
-		CMap *cmap = g_resourceloader->loadColormap("item.cmp");
+		CMap *cmap = CMap::create("item.cmp");
 		warning("Default colormap applied to resources loaded in this fashion");
-		resource = (void *)g_resourceloader->loadMaterial(buf, cmap);
+		resource = (void *)Material::create(buf);//, cmap);
 	} else {
 		warning("Resource type not understood");
 	}

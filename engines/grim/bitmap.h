@@ -26,6 +26,7 @@
 #include "graphics/pixelformat.h"
 
 #include "engines/grim/pool.h"
+#include "engines/grim/tmpresource.h"
 
 namespace Graphics {
 class PixelBuffer;
@@ -40,12 +41,14 @@ namespace Grim {
  * i.e. _x, _y and _currImage.
  * They are automatically deleted if they are not used by any bitmap anymore.
  */
-class BitmapData {
+class BitmapData : public SharedData<BitmapData> {
 public:
-	BitmapData(const Common::String &fname, Common::SeekableReadStream *data);
-	BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const char *fname);
 	BitmapData();
+	BitmapData(const Graphics::PixelBuffer &buf, int w, int h, const char *fname);
+	//BitmapData();
 	~BitmapData();
+
+	bool load(Common::SeekableReadStream *data);
 
 	/**
 	 * Loads an EMI TILE-bitmap.
@@ -53,12 +56,9 @@ public:
 	 * @param data		the data for the TILE.
 	 * @param len		the length of the data.
 	 */
-	bool loadTile(const Common::String &fname, Common::SeekableReadStream *data);
-	bool loadGrimBm(const Common::String &fname, Common::SeekableReadStream *data);
-	bool loadTGA(const Common::String &fname, Common::SeekableReadStream *data);
-
-	static BitmapData *getBitmapData(const Common::String &fname, Common::SeekableReadStream *data);
-	static Common::HashMap<Common::String, BitmapData *> *_bitmaps;
+	bool loadTile(Common::SeekableReadStream *data);
+	bool loadGrimBm(Common::SeekableReadStream *data);
+	bool loadTGA(Common::SeekableReadStream *data);
 
 	const Graphics::PixelBuffer &getImageData(int num) const;
 
@@ -76,7 +76,6 @@ public:
 	 */
 	void convertToColorFormat(int num, const Graphics::PixelFormat &format);
 
-	Common::String _fname;
 	int _numImages;
 	int _width, _height, _x, _y;
 	int _format;
@@ -85,16 +84,14 @@ public:
 	int _colorFormat;
 	void *_texIds;
 	bool _hasTransparency;
-	char _filename[32];
-
-	int _refCount;
 
 private:
 	Graphics::PixelBuffer *_data;
 };
 
-class Bitmap : public PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')> {
+class Bitmap : public PoolObject<Bitmap, MKTAG('V', 'B', 'U', 'F')>, public LoadableResource<Bitmap, BitmapData> {
 public:
+	class SharedData{};
 	/**
 	 * Construct a bitmap from the given data.
 	 *
@@ -102,13 +99,14 @@ public:
 	 * @param data		the actual data to construct from
 	 * @param len		the length of the data
 	 */
-	Bitmap(const Common::String &filename, Common::SeekableReadStream *data);
 	Bitmap(const Graphics::PixelBuffer &buf, int width, int height, const char *filename);
+	//Bitmap(const Common::String &filename, Common::SeekableReadStream *data);
+	Bitmap(const Common::String &name);
 	Bitmap();
+public:
+	void draw();
 
-	const Common::String &getFilename() const { return _data->_fname; }
-
-	void draw() const;
+	void postLoad();
 
 	/**
 	 * Set which image in an animated bitmap to use
@@ -140,9 +138,6 @@ public:
 	virtual ~Bitmap();
 
 private:
-	void freeData();
-
-	BitmapData *_data;
 	/**
 	 * Specifies a one-based index to the current image in BitmapData.
 	 * _currImage==0 means a null image is chosen.

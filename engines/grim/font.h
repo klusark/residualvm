@@ -24,6 +24,7 @@
 #define GRIM_FONT_H
 
 #include "engines/grim/pool.h"
+#include "engines/grim/resource.h"
 
 namespace Common {
 class SeekableReadStream;
@@ -35,6 +36,16 @@ class SaveGame;
 
 class Font : public PoolObject<Font, MKTAG('F', 'O', 'N', 'T')> {
 public:
+	static Font *create(const Common::String &filename) {
+		Common::SeekableReadStream *stream = g_resourceloader->openNewStreamFile(filename);
+		if(!stream)
+			error("Could not find font %s", filename.c_str());
+
+		Font *result = new Font(filename, stream);
+		delete stream;
+
+		return result;
+	}
 	Font(const Common::String &filename, Common::SeekableReadStream *data);
 	Font();
 	~Font();

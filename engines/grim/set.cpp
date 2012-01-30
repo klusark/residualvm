@@ -24,7 +24,7 @@
 
 #include "common/foreach.h"
 
-#include "engines/grim/debug.h"
+
 #include "engines/grim/set.h"
 #include "engines/grim/textsplit.h"
 #include "engines/grim/colormap.h"
@@ -35,7 +35,7 @@
 #include "engines/grim/gfx_base.h"
 
 #include "engines/grim/sound.h"
-
+#include "engines/grim/debug.h"
 namespace Grim {
 
 Set::Set(const Common::String &sceneName, Common::SeekableReadStream *data) :
@@ -86,7 +86,7 @@ void Set::loadText(TextSplitter &ts) {
 	char cmap_name[256];
 	for (int i = 0; i < _numCmaps; i++) {
 		ts.scanString(" colormap %256s", 1, cmap_name);
-		_cmaps[i] = g_resourceloader->getColormap(cmap_name);
+		_cmaps[i] = CMap::create(cmap_name);
 	}
 
 	if (ts.checkString("section: objectstates") || ts.checkString("sections: object_states")) {
@@ -234,7 +234,7 @@ bool Set::restoreState(SaveGame *savedState) {
 	_cmaps = new CMapPtr[_numCmaps];
 	for (int i = 0; i < _numCmaps; ++i) {
 		Common::String str = savedState->readString();
-		_cmaps[i] = g_resourceloader->getColormap(str);
+		_cmaps[i] = CMap::create(str);
 	}
 
 	int32 currSetupId = savedState->readLEUint32();
@@ -289,7 +289,7 @@ void Set::Setup::load(TextSplitter &ts) {
 	_name = buf;
 
 	ts.scanString(" background %256s", 1, buf);
-	_bkgndBm = g_resourceloader->loadBitmap(buf);
+	_bkgndBm = Bitmap::create(buf);
 	if (!_bkgndBm) {
 		Debug::warning(Debug::Bitmaps | Debug::Sets,
 					   "Unable to load scene bitmap: %s\n", buf);
@@ -304,7 +304,7 @@ void Set::Setup::load(TextSplitter &ts) {
 		ts.scanString(" zbuffer %256s", 1, buf);
 		// Don't even try to load if it's the "none" bitmap
 		if (strcmp(buf, "<none>.lbm") != 0) {
-			_bkgndZBm = g_resourceloader->loadBitmap(buf);
+			_bkgndZBm = Bitmap::create(buf);
 			Debug::debug(Debug::Bitmaps | Debug::Sets,
 						 "Loading scene z-buffer bitmap: %s\n", buf);
 		}
@@ -339,7 +339,7 @@ void Set::Setup::loadBinary(Common::SeekableReadStream *data) {
 	data->read(fileName,fNameLen);
 
 	_bkgndZBm = NULL;
-	_bkgndBm = g_resourceloader->loadBitmap(fileName);
+	_bkgndBm = Bitmap::create(fileName);
 
 
 	data->read(_pos.getData(), 12);

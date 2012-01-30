@@ -24,6 +24,7 @@
 #define GRIM_LIPSYNC_H
 
 #include "engines/grim/object.h"
+#include "engines/grim/tmpresource.h"
 
 namespace Common {
 class SeekableReadStream;
@@ -31,19 +32,21 @@ class SeekableReadStream;
 
 namespace Grim {
 
-class LipSync : public Object {
+class LipSyncData : public SharedData<LipSyncData> {
 public:
-	LipSync(const Common::String &filename, Common::SeekableReadStream *data);
-	~LipSync();
+	LipSyncData();
+	~LipSyncData();
+
+	bool load(Common::SeekableReadStream *data);
 
 	struct LipEntry {
 		uint16 frame;
 		uint16 anim;
 	};
 
-	int getAnim(int pos);
-	bool isValid() { return _numEntries > 0; }
-	const Common::String &getFilename() const { return _fname; };
+	int getAnim(int pos) const;
+	bool isValid() const { return _numEntries > 0; }
+
 
 private:
 	LipEntry *_entries;
@@ -56,7 +59,15 @@ private:
 
 	static const PhonemeAnim _animTable[];
 	static const int _animTableSize;
-	Common::String _fname;
+};
+
+class LipSync : public Object, public LoadableResource<LipSync, LipSyncData> {
+public:
+	LipSync(const Common::String &name) : LoadableResource<LipSync, LipSyncData>(name) {};
+
+	int getAnim(int pos) const { requireLoaded(); return _data->getAnim(pos); }
+	bool isValid() const { requireLoaded(); return _data->isValid(); }
+
 };
 
 } // end of namespace Grim
