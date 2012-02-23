@@ -1,0 +1,16 @@
+
+begin 9cb18fd8bcfcfd88d1df7244176ac0e6 582A
+
+insert 3520 10		#Make space for elseif debugButtonHandler(arg1, arg2, arg3, local3, nil) then return
+
+replace 34e1 5b		#Increase the size of function code block
+
+replace 351e 1c 03	#Increase the jump amount
+
+replace 3520 1e 4a 16 17 18 1b 02 7a 05 6f 05 7b 08 6e 0c 03 #elseif debugButtonHandler(arg1, arg2, arg3, local3, nil) then return
+
+#Const values
+replace 383e 4b		#Increase the counter of constants by one
+insert 3c51 16		#Make space for one new string
+replace 3c51 53 00 13 9b 9a 9d 8a 98 bd 8a 8b 8b 90 91 b7 9e 91 9b 93 9a 8d ff	#Set string debugButtonHandler (number 0x4A)
+end
