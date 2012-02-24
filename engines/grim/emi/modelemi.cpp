@@ -258,6 +258,9 @@ void EMIModel::draw() {
 		_faces[i].render();
 		g_driver->drawEMIModelFace(this, &_faces[i]);
 	}
+	if (_skeleton) {
+		g_driver->drawSkel(_skeleton);
+	}
 }
 
 EMIModel::EMIModel(const Common::String &filename, Common::SeekableReadStream *data, EMIModel *parent) : _fname(filename) {

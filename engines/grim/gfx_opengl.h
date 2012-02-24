@@ -50,7 +50,7 @@ public:
 	void initExtensions();
 
 	const char *getVideoDeviceName();
-
+	void drawSkel(Skeleton *skel);
 	void setupCamera(float fov, float nclip, float fclip, float roll);
 	void positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest);
 

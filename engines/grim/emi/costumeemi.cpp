@@ -198,7 +198,6 @@ void EMICostume::draw() {
 			}
 		}
 	}
-
 	if (_emiMesh) {
 		_emiMesh->draw();
 	}

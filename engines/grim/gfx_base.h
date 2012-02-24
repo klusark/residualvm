@@ -51,6 +51,7 @@ class MeshFace;
 struct Sprite;
 class Light;
 class Texture;
+class Skeleton;
 
 /**
  * The Color-formats used for bitmaps in Grim Fandango/Escape From Monkey Island
@@ -65,7 +66,7 @@ class GfxBase {
 public:
 	GfxBase();
 	virtual ~GfxBase() { ; }
-
+	virtual void drawSkel(Skeleton *skel) {}
 	/**
 	 * Creates a render-context.
 	 *

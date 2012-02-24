@@ -44,6 +44,7 @@
 #include "engines/grim/model.h"
 #include "engines/grim/set.h"
 #include "engines/grim/emi/modelemi.h"
+#include "engines/grim/emi/skeleton.h"
 
 #ifdef USE_OPENGL
 
@@ -90,6 +91,64 @@ GfxOpenGL::~GfxOpenGL() {
 	if (_useDepthShader)
 		glDeleteProgramsARB(1, &_fragmentProgram);
 #endif
+}
+
+
+void RenderBone(Skeleton *skel, int index) {
+	Math::Vector3d vector(0, 0, 0);
+	Math::Vector3d parentvector(0, 0, 0);
+	Joint *joint = &(skel->_joints[index]);
+	joint->_finalMatrix.transform(&vector, true);
+	
+	if (joint->_parentIndex != -1) {
+		skel->_joints[joint->_parentIndex]._finalMatrix.transform(&parentvector, true);
+	}
+
+	glDisable( GL_TEXTURE_2D );
+
+	// render bone as a line
+	glLineWidth(1.0);
+
+	//if Selected = Index then
+	//glColor3f(1.0, 1.0, 0)
+	//else
+	glColor3f(1.0, 0, 0);
+
+	glBegin(GL_LINES);
+
+	glVertex3f( vector.x(), vector.y(), vector.z() );
+
+	if (joint->_parentIndex != -1) {
+		glVertex3f( parentvector.x(), parentvector.y(), parentvector.z() );
+	} else {
+		glVertex3f( vector.x(), vector.y(), vector.z() );
+	}
+
+	glEnd();
+
+	// render bone-ends as fat points
+	glPointSize(2.0);
+	glColor3f(1.0, 0, 1.0);
+
+	glBegin(GL_POINTS);
+
+	glVertex3f( vector.x(), vector.y(), vector.z() );
+
+	if (joint->_parentIndex != -1)
+		glVertex3f( parentvector.x(), parentvector.y(), parentvector.z() );
+
+	glEnd();
+
+	glColor3f(1.0, 1.0, 1.0);
+}
+
+void GfxOpenGL::drawSkel(Skeleton *skel) {
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+	for (int i = 0; i < skel->_numJoints; ++i) {
+		RenderBone(skel, i);
+	}
 }
 
 byte *GfxOpenGL::setupScreen(int screenW, int screenH, bool fullscreen) {
