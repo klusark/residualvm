@@ -238,6 +238,11 @@ Material::Material(const Common::String &filename, Common::SeekableReadStream *d
 	_data = MaterialData::getMaterialData(filename, data, cmap);
 }
 
+
+Material::Material() :
+		Object(), _currImage(0), _data(NULL) {
+}
+
 void Material::reload(CMap *cmap) {
 	Common::String fname = _data->_fname;
 	--_data->_refCount;

@@ -119,7 +119,7 @@ public:
 	void prepareMovieFrame(Graphics::Surface* frame);
 	void drawMovieFrame(int offsetX, int offsetY);
 	void releaseMovieFrame();
-
+	byte *_storedDisplay;
 protected:
 	void drawDepthBitmap(int x, int y, int w, int h, char *data);
 private:
@@ -128,7 +128,7 @@ private:
 	GLuint *_smushTexIds;
 	int _smushWidth;
 	int _smushHeight;
-	byte *_storedDisplay;
+	//byte *_storedDisplay;
 	bool _useDepthShader;
 	GLuint _fragmentProgram;
 	bool _useDimShader;

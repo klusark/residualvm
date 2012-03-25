@@ -495,6 +495,7 @@ private:
 	Math::Angle _pitch, _yaw, _roll;
 	float _walkRate, _turnRate;
 
+	bool _inOverworld;
 	bool _constrain;	// Constrain to walkboxes
 	float _reflectionAngle;	// Maximum angle to turn by at walls
 	bool _visible;
@@ -592,8 +593,6 @@ private:
 	static bool _isTalkingBackground;
 	Actor *_attachedActor;
 	Common::String _attachedJoint;
-
-	bool _inOverworld;
 
 	friend class GrimEngine;
 };

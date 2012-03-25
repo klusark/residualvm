@@ -34,6 +34,7 @@
 #include "engines/grim/set.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/lipsync.h"
+#include "engines/grim/gfx_base.h"
 
 #include "engines/grim/movie/movie.h"
 
@@ -107,7 +108,9 @@ void Lua_V2::MakeScreenTextures() {
 
 	if (!lua_isnil(indexObj) && lua_isnumber(indexObj)) {
 		int index = (int)lua_getnumber(indexObj);
-		warning("Lua_V2::MakeScreenTextures, index: %d", index);
+		//warning("Lua_V2::MakeScreenTextures, index: %d", index);
+		//kind of a hack
+		g_driver->storeDisplay();
 		// FIXME: implement missing function
 //		if (func(index)) {
 			lua_pushnumber(1.0);

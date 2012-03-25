@@ -76,6 +76,7 @@ Actor::Actor(const Common::String &actorName) :
 		_walkedLast(false), _walkedCur(false),
 		_lastTurnDir(0), _currTurnDir(0),
 		_sayLineText(0), _attachedActor(NULL), _attachedJoint("") {
+	_inOverworld = false;
 	_lookingMode = false;
 	_constrain = false;
 	_talkSoundName = "";

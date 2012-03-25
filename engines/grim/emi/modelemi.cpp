@@ -25,6 +25,7 @@
 #include "engines/grim/grim.h"
 #include "engines/grim/material.h"
 #include "engines/grim/gfx_base.h"
+#include "engines/grim/gfx_opengl.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/emi/modelemi.h"
 #include "engines/grim/emi/animationemi.h"
@@ -240,6 +241,121 @@ void EMIModel::prepareForRender() {
 	}
 }
 
+class SpecialtyMaterial : public Material {
+public:
+	SpecialtyMaterial(const Common::String &name);
+	virtual void select() const;
+	Texture *_texture;
+};
+
+SpecialtyMaterial::SpecialtyMaterial(const Common::String &name) {
+	_texture = new Texture();
+	GfxOpenGL *gl = dynamic_cast<GfxOpenGL *>(g_driver);
+	_texture->_width = 640;
+	_texture->_height = 480;
+	_texture->_bpp = 4;
+	_texture->_colorFormat = BM_RGBA;
+	byte *stored = gl->_storedDisplay;
+	byte *buff = stored;
+	if (name == "specialty0") {
+		_texture->_width = 256;
+		_texture->_height = 256;
+		buff = new byte[256*256*4];
+		byte *ptr = buff;
+		for (int i = 0; i < 256; ++i) {
+			memcpy(ptr, stored, 256*4);
+			ptr += 256*4;
+			stored += 640*4;
+		}
+	} else if (name == "specialty1") {
+		_texture->_width = 256;
+		_texture->_height = 256;
+		buff = new byte[256*256*4];
+		byte *ptr = buff;
+		for (int i = 0; i < 256; ++i) {
+			stored += 256*4;
+			memcpy(ptr, stored, 256*4);
+			ptr += 256*4;
+			stored += 384*4;
+		}
+	} else if (name == "specialty2") {
+		_texture->_width = 128;
+		_texture->_height = 128;
+		buff = new byte[128*128*4];
+		byte *ptr = buff;
+		for (int i = 0; i < 128; ++i) {
+			stored += 512*4;
+			memcpy(ptr, stored, 128*4);
+			ptr += 128*4;
+			stored += 128*4;
+		}
+	} else if (name == "specialty3") {
+		_texture->_width = 128;
+		_texture->_height = 128;
+		buff = new byte[128*128*4];
+		byte *ptr = buff;
+		stored += 640*128*4;
+		for (int i = 0; i < 128; ++i) {
+			stored += 512*4;
+			memcpy(ptr, stored, 128*4);
+			ptr += 128*4;
+			stored += 128*4;
+		}
+	} else if (name == "specialty4") {
+		_texture->_width = 256;
+		_texture->_height = 256;
+		buff = new byte[256*256*4];
+		byte *ptr = buff;
+		stored += 640*256*4;
+		for (int i = 0; i < 224; ++i) {
+			memcpy(ptr, stored, 256*4);
+			ptr += 256*4;
+			stored += 640*4;
+		}
+	} else if (name == "specialty5") {
+		_texture->_width = 256;
+		_texture->_height = 256;
+		buff = new byte[256*256*4];
+		byte *ptr = buff;
+		stored += 640*256*4;
+		for (int i = 0; i < 224; ++i) {
+			stored += 256*4;
+			memcpy(ptr, stored, 256*4);
+			ptr += 256*4;
+			stored += 384*4;
+		}
+	} else if (name == "specialty6") {
+		_texture->_width = 128;
+		_texture->_height = 128;
+		buff = new byte[128*128*4];
+		byte *ptr = buff;
+		stored += 640*256*4;
+		for (int i = 0; i < 128; ++i) {
+			stored += 512*4;
+			memcpy(ptr, stored, 128*4);
+			ptr += 128*4;
+			stored += 128*4;
+		}
+	} else if (name == "specialty7") {
+		_texture->_width = 128;
+		_texture->_height = 128;
+		buff = new byte[128*128*4];
+		byte *ptr = buff;
+		stored += 640*384*4;
+		for (int i = 0; i < 96; ++i) {
+			stored += 512*4;
+			memcpy(ptr, stored, 128*4);
+			ptr += 128*4;
+			stored += 128*4;
+		}
+	}
+	g_driver->createMaterial(_texture, (const char *)buff, NULL);
+}
+
+void SpecialtyMaterial::select() const {
+	g_driver->selectMaterial(_texture);
+}
+
 void EMIModel::prepareTextures() {
 	_mats = new Material*[_numTextures];
 	for (uint32 i = 0; i < _numTextures; i++) {
@@ -247,7 +363,7 @@ void EMIModel::prepareTextures() {
 		if (!_texNames[i].contains("specialty"))
 			_mats[i] = g_resourceloader->loadMaterial(_texNames[i].c_str(), NULL);
 		else
-			_mats[i] = NULL;
+			_mats[i] = new SpecialtyMaterial(_texNames[i]);
 	}
 }
 
