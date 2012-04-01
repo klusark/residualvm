@@ -376,7 +376,7 @@ void GfxOpenGL::getBoundingBoxPos(const Mesh *model, int *x1, int *y1, int *x2, 
 }
 
 void GfxOpenGL::startActorDraw(const Math::Vector3d &pos, float scale, const Math::Angle &yaw,
-		const Math::Angle &pitch, const Math::Angle &roll) {
+		const Math::Angle &pitch, const Math::Angle &roll, const bool inOverworld) {
 	glEnable(GL_TEXTURE_2D);
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -394,17 +394,24 @@ void GfxOpenGL::startActorDraw(const Math::Vector3d &pos, float scale, const Mat
 		glColor3f(_shadowColorR / 255.0f, _shadowColorG / 255.0f, _shadowColorB / 255.0f);
 		glShadowProjection(_currentShadowArray->pos, shadowSector->getVertices()[0], shadowSector->getNormal(), _currentShadowArray->dontNegate);
 	}
-	glTranslatef(pos.x(), pos.y(), pos.z());
-	glScalef(scale, scale, scale);
-	// EMI uses Y axis as down-up, so we need to rotate differently.
-	if (g_grim->getGameType() == GType_MONKEY4) {
-		glRotatef(yaw.getDegrees(), 0, -1, 0);
-		glRotatef(pitch.getDegrees(), 1, 0, 0);
-		glRotatef(roll.getDegrees(), 0, 0, 1);
+
+	if (inOverworld) {
+		glLoadIdentity();
+		glScalef(1.0, 1.0, -1.0);
+		glTranslatef(pos.x(), pos.y(), pos.z());
 	} else {
-		glRotatef(yaw.getDegrees(), 0, 0, 1);
-		glRotatef(pitch.getDegrees(), 1, 0, 0);
-		glRotatef(roll.getDegrees(), 0, 1, 0);
+		glTranslatef(pos.x(), pos.y(), pos.z());
+		glScalef(scale, scale, scale);
+		// EMI uses Y axis as down-up, so we need to rotate differently.
+		if (g_grim->getGameType() == GType_MONKEY4) {
+			glRotatef(yaw.getDegrees(), 0, -1, 0);
+			glRotatef(pitch.getDegrees(), 1, 0, 0);
+			glRotatef(roll.getDegrees(), 0, 0, 1);
+		} else {
+			glRotatef(yaw.getDegrees(), 0, 0, 1);
+			glRotatef(pitch.getDegrees(), 1, 0, 0);
+			glRotatef(roll.getDegrees(), 0, 1, 0);
+		}
 	}
 }
 
