@@ -33,6 +33,7 @@
 
 namespace Graphics {
 class PixelBuffer;
+class Shader;
 }
 
 namespace Common {
@@ -121,6 +122,9 @@ public:
 
 // private:
 	Graphics::PixelBuffer *_data;
+#ifdef USE_OPENGL_SHADERS
+	Graphics::Shader *_shader;
+#endif
 };
 
 class Bitmap : public PoolObject<Bitmap> {
