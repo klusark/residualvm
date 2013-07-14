@@ -244,6 +244,9 @@ void GfxOpenGLS::setupShaders() {
 	_textProgram = Graphics::Shader::fromFiles("text", commonAttributes);
 	_emergProgram = Graphics::Shader::fromFiles("emerg", commonAttributes);
 
+	static const char* actorAttributes[] = {"position", "texcoord", "color", "normal", NULL};
+	_actorProgram = Graphics::Shader::fromFiles(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
+
 	setupBigEBO();
 	setupQuadEBO();
 	setupTexturedQuad();
@@ -313,6 +316,20 @@ void GfxOpenGLS::setupCamera(float fov, float nclip, float fclip, float roll) {
 }
 
 void GfxOpenGLS::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest, float roll) {
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		_currentPos = pos;
+		_currentQuat = Math::Quaternion(interest.x(), interest.y(), interest.z(), roll);
+	} else {
+		Math::Matrix4 viewMatrix = makeRotationMatrix(Math::Angle(roll), Math::Vector3d(0, 0, 1));
+		Math::Vector3d up_vec(0, 0, 1);
+
+		if (pos.x() == interest.x() && pos.y() == interest.y())
+			up_vec = Math::Vector3d(0, 1, 0);
+
+		Math::Matrix4 lookMatrix = makeLookMatrix(pos, interest, up_vec);
+
+		_viewMatrix = viewMatrix * lookMatrix;
+	}
 }
 
 
@@ -331,6 +348,65 @@ void GfxOpenGLS::getBoundingBoxPos(const Mesh *mesh, int *x1, int *y1, int *x2, 
 
 void GfxOpenGLS::startActorDraw(const Math::Vector3d &pos, float scale, const Math::Quaternion &quat,
                                 const bool inOverworld, const float alpha, const bool depthOnly) {
+	_actorProgram->use();
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+
+	Math::Matrix4 modelMatrix = quat.toMatrix();
+
+	if (g_grim->getGameType() == GType_MONKEY4) {
+		Math::Matrix4 viewMatrix = _currentQuat.toMatrix();
+
+		Math::Matrix4 extraMatrix;
+//		_mvpMatrix = _projMatrix * viewMatrix * modelMatrix;
+
+		_actorProgram->setUniform("modelMatrix", modelMatrix);
+		_actorProgram->setUniform("projMatrix", _projMatrix);
+		_actorProgram->setUniform("viewMatrix", viewMatrix);
+		_actorProgram->setUniform("extraMatrix", extraMatrix);
+
+		_actorProgram->setUniform("cameraPos", _currentPos);
+		_actorProgram->setUniform("actorPos", pos);
+		_actorProgram->setUniform("isBillboard", GL_FALSE);
+		_actorProgram->setUniform1f("alpha", alpha);
+	} else {
+		Math::Matrix4 extraMatrix;
+
+		modelMatrix.transpose();
+		modelMatrix.setPosition(pos);
+		_mvpMatrix = _viewMatrix * modelMatrix;
+		_mvpMatrix.transpose();
+
+		_actorProgram->setUniform("modelMatrix", modelMatrix);
+		_actorProgram->setUniform("projMatrix", _projMatrix);
+		_actorProgram->setUniform("viewMatrix", _viewMatrix);
+		_actorProgram->setUniform("extraMatrix", extraMatrix);
+		_actorProgram->setUniform("mvpMatrix", _mvpMatrix);
+		_actorProgram->setUniform("tex", 0);
+		_actorProgram->setUniform("texZBuf", 1);
+		_actorProgram->setUniform("texcropZBuf", _zBufTexCrop);
+
+		_actorProgram->setUniform("lightsEnabled", _lightsEnabled);
+		if (_lightsEnabled) {
+			for (uint32 i = 0; i < _maxLights; ++i) {
+				const Light &l = _lights[i];
+				Common::String uniform;
+				uniform = Common::String::format("lights[%u]._position", i);
+				_actorProgram->setUniform(uniform.c_str(), _viewMatrix * l._position);
+
+				Math::Vector4d direction = l._direction;
+				direction.w() = 0.0;
+				_viewMatrix.transformVector(&direction);
+				direction.w() = l._direction.w();
+
+				uniform = Common::String::format("lights[%u]._direction", i);
+				_actorProgram->setUniform(uniform.c_str(), direction);
+
+				uniform = Common::String::format("lights[%u]._color", i);
+				_actorProgram->setUniform(uniform.c_str(), l._color);
+			}
+		}
+	}
 }
 
 
@@ -399,9 +475,51 @@ void GfxOpenGLS::updateEMIModel(const EMIModel* model) {
 }
 
 void GfxOpenGLS::drawEMIModelFace(const EMIModel* model, const EMIMeshFace* face) {
+	model->_shader->use();
+	model->_shader->setUniform("textured", face->_hasTexture ? GL_TRUE : GL_FALSE);
+	model->_shader->setUniform("lightsEnabled", _lightsEnabled);
+
+	Math::Matrix4 extraMatrix;
+	model->_shader->setUniform("extraMatrix", extraMatrix);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->_indicesEBO);
+
+	glDrawElements(GL_TRIANGLES, 3 * face->_faceLength, GL_UNSIGNED_INT, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GfxOpenGLS::drawMesh(const Mesh *mesh) {
+	Graphics::Shader * actorShader = mesh->_shader;
+	if (!actorShader)
+		return;
+
+	actorShader->use();
+	actorShader->setUniform("extraMatrix", _matrixStack.top());
+
+	Material *curMaterial = NULL;
+	for (int i = 0; i < mesh->_numFaces;) {
+		const MeshFace *face = &mesh->_faces[i];
+		if (face->_light == 0 && !isShadowModeActive())
+			disableLights();
+
+		curMaterial = face->_material;
+		curMaterial->select();
+
+		int faces = 0;
+		for (; i < mesh->_numFaces; ++i) {
+			if (mesh->_faces[i]._material != curMaterial)
+				break;
+			faces += 3 * (mesh->_faces[i]._numVertices - 2);
+		}
+
+		actorShader->setUniform("textured", face->_texVertices ? GL_TRUE : GL_FALSE);
+		actorShader->setUniform("texScale", Math::Vector2d(_selectedTexture->_width, _selectedTexture->_height));
+
+		glDrawArrays(GL_TRIANGLES, face->_start, faces);
+
+		if (face->_light == 0 && !isShadowModeActive())
+			enableLights();
+	}
 }
 
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
