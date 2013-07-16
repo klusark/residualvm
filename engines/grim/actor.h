@@ -212,7 +212,7 @@ public:
 	 *
 	 * @see turnTo
 	 */
-	 bool isTurning() const;
+	bool isTurning() const;
 	/**
 	 * Sets the rotation of the actor in the 3D scene.
 	 * The effect is immediate.
@@ -537,6 +537,7 @@ private:
 	bool shouldDrawShadow(int shadowId);
 	void stopTalking();
 	bool stopMumbleChore();
+	void drawCostume(Costume *costume, const Math::Vector3d &absPos, const Math::Quaternion &rot);
 	/**
 	 * Given a start point and a destination this function returns a position
 	 * that doesn't collide with any actor.
@@ -560,8 +561,8 @@ private:
 	Math::Angle _pitch, _yaw, _roll;
 	float _walkRate, _turnRate;
 
-	bool _followBoxes;	// Constrain to walkboxes
-	float _reflectionAngle;	// Maximum angle to turn by at walls
+	bool _followBoxes;  // Constrain to walkboxes
+	float _reflectionAngle; // Maximum angle to turn by at walls
 	bool _visible;
 	float _scale;
 	float _timeScale;

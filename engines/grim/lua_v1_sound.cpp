@@ -20,6 +20,8 @@
  *
  */
 
+#include "common/savefile.h"
+
 #include "engines/grim/debug.h"
 #include "engines/grim/grim.h"
 #include "engines/grim/lua_v1.h"
@@ -97,7 +99,7 @@ void Lua_V1::ImSetMusicVol() {
 	lua_Object volObj = lua_getparam(1);
 	if (!lua_isnumber(volObj))
 		return;
-	g_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kMusicSoundType, (int)lua_getnumber(volObj) * ImToMixer);
+	g_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kMusicSoundType, (int)(lua_getnumber(volObj) * ImToMixer));
 }
 
 void Lua_V1::ImGetMusicVol() {
@@ -108,7 +110,7 @@ void Lua_V1::ImSetVoiceVol() {
 	lua_Object volObj = lua_getparam(1);
 	if (!lua_isnumber(volObj))
 		return;
-	g_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kSpeechSoundType, (int)lua_getnumber(volObj) * ImToMixer);
+	g_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kSpeechSoundType, (int)(lua_getnumber(volObj) * ImToMixer));
 }
 
 void Lua_V1::ImGetVoiceVol() {
@@ -119,7 +121,7 @@ void Lua_V1::ImSetSfxVol() {
 	lua_Object volObj = lua_getparam(1);
 	if (!lua_isnumber(volObj))
 		return;
-	g_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kSFXSoundType, (int)lua_getnumber(volObj) * ImToMixer);
+	g_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kSFXSoundType, (int)(lua_getnumber(volObj) * ImToMixer));
 }
 
 void Lua_V1::ImGetSfxVol() {

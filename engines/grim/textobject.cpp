@@ -33,12 +33,13 @@ namespace Grim {
 
 TextObjectCommon::TextObjectCommon() :
 	_x(0), _y(0), _fgColor(0), _justify(0), _width(0), _height(0),
-	_font(NULL), _duration(0), _positioned(false) {
+	_font(NULL), _duration(0), _positioned(false),
+	_posX(0), _posY(0) {
 }
 
 TextObject::TextObject(bool blastDraw, bool isSpeech) :
-		TextObjectCommon(), _numberLines(1),
-		_maxLineWidth(0), _lines(0), _userData(0), _created(false) {
+		TextObjectCommon(), _numberLines(1), _textID(""), _elapsedTime(0),
+		_maxLineWidth(0), _lines(NULL), _userData(NULL), _created(false) {
 	_blastDraw = blastDraw;
 	_isSpeech = isSpeech;
 }
@@ -197,7 +198,7 @@ void TextObject::setupText() {
 
 	// If the speaker is too close to the edge of the screen we have to make
 	// some room for the subtitles.
-	if (_isSpeech){
+	if (_isSpeech) {
 		if (_posX < SCREEN_MARGIN) {
 			_posX = SCREEN_MARGIN;
 		} else if (SCREEN_WIDTH - _posX < SCREEN_MARGIN) {
@@ -241,7 +242,7 @@ void TextObject::setupText() {
 				}
 				message += '-';
 				wordSplit = true;
- 			}
+			}
 			message += '\n';
 			currLine.clear();
 			_numberLines++;
@@ -330,7 +331,7 @@ int TextObject::getLineY(int line) const {
 	}
 	if (y < 0)
 		y = 0;
-	y += _font->getHeight()*line;
+	y += _font->getHeight() * line;
 
 	return y;
 }

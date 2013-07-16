@@ -149,7 +149,7 @@ void MoviePlayer::deinit() {
 	_videoFinished = true;
 }
 
-bool MoviePlayer::play(Common::String filename, bool looping, int x, int y, bool start) {
+bool MoviePlayer::play(const Common::String &filename, bool looping, int x, int y, bool start) {
 	Common::StackLock lock(_frameMutex);
 	deinit();
 	_x = x;
@@ -175,7 +175,7 @@ bool MoviePlayer::play(Common::String filename, bool looping, int x, int y, bool
 	return true;
 }
 
-bool MoviePlayer::loadFile(Common::String filename) {
+bool MoviePlayer::loadFile(const Common::String &filename) {
 	return _videoDecoder->loadFile(filename);
 }
 
@@ -237,7 +237,7 @@ void MoviePlayer::restoreState(SaveGame *state) {
 #ifdef NEED_NULLPLAYER
 class NullPlayer : public MoviePlayer {
 public:
-	NullPlayer(const char* codecID) {
+	NullPlayer(const char *codecID) {
 		warning("%s-playback not compiled in, but needed", codecID);
 		_videoFinished = true; // Rigs all movies to be completed.
 	}

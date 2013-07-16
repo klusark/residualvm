@@ -37,18 +37,7 @@ class Material;
 class Mesh;
 class ModelNode;
 class CMap;
-
-struct Sprite {
-	void draw() const;
-	void loadBinary(Common::SeekableReadStream*);
-
-	Math::Vector3d _pos;
-	float _width;
-	float _height;
-	bool _visible;
-	Material *_material;
-	Sprite *_next;
-};
+class Sprite;
 
 class Model : public Object {
 public:
@@ -131,12 +120,12 @@ public:
 
 	int _numVertices;
 	int *_materialid;
-	float *_vertices;		// sets of 3
+	float *_vertices;       // sets of 3
 	float *_verticesI;
-	float *_vertNormals;	// sets of 3
+	float *_vertNormals;    // sets of 3
 
 	int _numTextureVerts;
-	float *_textureVerts;	// sets of 2
+	float *_textureVerts;   // sets of 2
 
 	int _numFaces;
 	MeshFace *_faces;
@@ -187,7 +176,7 @@ public:
 	Math::Matrix4 _matrix;
 	Math::Matrix4 _localMatrix;
 	Math::Matrix4 _pivotMatrix;
-	Sprite* _sprite;
+	Sprite *_sprite;
 };
 
 } // end of namespace Grim

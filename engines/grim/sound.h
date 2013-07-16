@@ -23,10 +23,12 @@
 #ifndef GRIM_SOUND_H
 #define GRIM_SOUND_H
 
+#include "engines/grim/savegame.h"
+
 namespace Grim {
 
 class EMISound;
-	
+
 class SoundPlayer {
 	EMISound *_emiSound;
 public:
@@ -36,21 +38,25 @@ public:
 	bool getSoundStatus(const char *soundName);
 	void stopSound(const char *soundName);
 	int32 getPosIn16msTicks(const char *soundName);
-	
+
 	void setVolume(const char *soundName, int volume);
 	void setPan(const char *soundName, int pan);
-	
+
 	void setMusicState(int stateId);
+// Save/Load:
+	void restoreState(SaveGame *savedState);
+	void saveState(SaveGame *savedState);
+// EMI-Only:
 	void selectMusicSet(int setId);
 	uint32 getMsPos(int stateId);
-	
+
 	void pushState();
 	void popState();
 	void flushStack();
 };
 
 extern SoundPlayer *g_sound;
-	
+
 } // end of namespace Grim
 
 #endif

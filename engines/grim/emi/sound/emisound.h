@@ -29,7 +29,7 @@
 namespace Grim {
 
 class SoundTrack;
-	
+
 struct MusicEntry {
 	int _x;
 	int _y;
@@ -51,9 +51,9 @@ class EMISound {
 	Common::String _musicPrefix;
 	Common::Stack<SoundTrack*> _stateStack;
 
-	void removeItem(SoundTrack* item);
+	void removeItem(SoundTrack *item);
 	int32 getFreeChannel();
-	int32 getChannelByName(Common::String name);
+	int32 getChannelByName(const Common::String &name);
 	void freeChannel(int32 channel);
 	void initMusicTable();
 public:
@@ -70,14 +70,20 @@ public:
 	void setMusicState(int stateId);
 	void selectMusicSet(int setId);
 
+	void restoreState(SaveGame *savedState);
+	void saveState(SaveGame *savedState);
 // The stack-classes currently ignore g_imusestate completely.
 	void pushStateToStack();
 	void popStateFromStack();
 	void flushStack();
 
 	uint32 getMsPos(int stateId);
+private:
+	void freeAllChannels();
+	bool initTrack(const Common::String &filename, SoundTrack *track);
+	SoundTrack *createEmptyMusicTrack() const;
 };
-	
+
 }
 
 #endif

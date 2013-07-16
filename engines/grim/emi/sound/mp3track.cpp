@@ -62,8 +62,8 @@ MP3Track::~MP3Track() {
 	stop();
 	delete _handle;
 }
-	
-bool MP3Track::openSound(Common::String soundName, Common::SeekableReadStream *file) {
+
+bool MP3Track::openSound(const Common::String &soundName, Common::SeekableReadStream *file) {
 #ifndef USE_MAD
 	return false;
 #else

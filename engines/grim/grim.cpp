@@ -46,7 +46,6 @@
 #include "engines/grim/grim.h"
 #include "engines/grim/lua.h"
 #include "engines/grim/lua_v1.h"
-#include "engines/grim/emi/lua_v2.h"
 #include "engines/grim/emi/poolsound.h"
 #include "engines/grim/actor.h"
 #include "engines/grim/movie/movie.h"
@@ -200,12 +199,16 @@ void GrimEngine::clearPools() {
 	_currSet = NULL;
 }
 
+LuaBase *GrimEngine::createLua() {
+	return new Lua_V1();
+}
+
 void GrimEngine::createRenderer() {
 #ifdef USE_OPENGL
 	_softRenderer = g_registry->getBool("soft_renderer");
 #endif
 
-	if (!_softRenderer && !g_system->hasFeature(OSystem::kFeatureOpenGL)){
+	if (!_softRenderer && !g_system->hasFeature(OSystem::kFeatureOpenGL)) {
 		warning("gfx backend doesn't support hardware rendering");
 		_softRenderer = true;
 	}
@@ -236,8 +239,8 @@ Common::Error GrimEngine::run() {
 		MD5CheckDialog d;
 		if (!d.runModal()) {
 			Common::String confirmString("ResidualVM found some problems with your game data files.\n"
-				"Running ResidualVM nevertheless may cause game bugs or even crashes.\n"
-				"Do you still want to run ");
+										 "Running ResidualVM nevertheless may cause game bugs or even crashes.\n"
+										 "Do you still want to run ");
 			confirmString += (GType_MONKEY4 == getGameType() ? "Escape From Monkey Island?" : "Grim Fandango?");
 			GUI::MessageDialog msg(confirmString, "Yes", "No");
 			if (!msg.runModal()) {
@@ -288,12 +291,7 @@ Common::Error GrimEngine::run() {
 	if (_softRenderer)
 		g_driver->flipBuffer();
 
-	LuaBase *lua = NULL;
-	if (getGameType() == GType_GRIM) {
-		lua = new Lua_V1();
-	} else {
-		lua = new Lua_V2();
-	}
+	LuaBase *lua = createLua();
 
 	lua->registerOpcodes();
 	lua->registerLua();
@@ -312,8 +310,7 @@ Common::Error GrimEngine::run() {
 	}
 
 	g_grim->setMode(NormalMode);
-	if (splash_bm)
-		delete splash_bm;
+	delete splash_bm;
 	g_grim->mainLoop();
 
 	return Common::kNoError;
@@ -321,10 +318,10 @@ Common::Error GrimEngine::run() {
 
 Common::Error GrimEngine::loadGameState(int slot) {
 	assert(slot >= 0);
-	if (getGameType() == GType_MONKEY4) { 
-		_savegameFileName = Common::String::format("efmi%03d.gsv",slot);
+	if (getGameType() == GType_MONKEY4) {
+		_savegameFileName = Common::String::format("efmi%03d.gsv", slot);
 	} else {
-		_savegameFileName = Common::String::format("grim%02d.gsv",slot);
+		_savegameFileName = Common::String::format("grim%02d.gsv", slot);
 	}
 	_savegameLoadRequest = true;
 	return Common::kNoError;
@@ -504,88 +501,7 @@ void GrimEngine::updateDisplayScene() {
 
 		g_driver->clearScreen();
 
-		_prevSmushFrame = 0;
-		_movieTime = 0;
-
-		_currSet->drawBackground();
-
-		// Draw underlying scene components
-		// Background objects are drawn underneath everything except the background
-		// There are a bunch of these, especially in the tube-switcher room
-		_currSet->drawBitmaps(ObjectState::OBJSTATE_BACKGROUND);
-
-		// State objects are drawn on top of other things, such as the flag
-		// on Manny's message tube
-		_currSet->drawBitmaps(ObjectState::OBJSTATE_STATE);
-
-		// Play SMUSH Animations
-		// This should occur on top of all underlying scene objects,
-		// a good example is the tube switcher room where some state objects
-		// need to render underneath the animation or you can't see what's going on
-		// This should not occur on top of everything though or Manny gets covered
-		// up when he's next to Glottis's service room
-		if (g_movie->isPlaying() && _movieSetup == _currSet->getCurrSetup()->_name) {
-			_movieTime = g_movie->getMovieTime();
-			if (g_movie->isUpdateNeeded()) {
-				g_driver->prepareMovieFrame(g_movie->getDstSurface());
-				g_movie->clearUpdateNeeded();
-			}
-			if (g_movie->getFrame() >= 0)
-				g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
-			else
-				g_driver->releaseMovieFrame();
-		}
-
-		// Underlay objects must be drawn on top of movies
-		// Otherwise the lighthouse door will always be open as the underlay for
-		// the closed door will be overdrawn by a movie used as background image.
-		_currSet->drawBitmaps(ObjectState::OBJSTATE_UNDERLAY);
-
-		// Draw Primitives
-		foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
-			p->draw();
-		}
-
-		_currSet->setupCamera();
-
-		g_driver->set3DMode();
-
-		if (_setupChanged) {
-			cameraPostChangeHandle(_currSet->getSetup());
-			_setupChanged = false;
-		}
-
-		// Draw actors
-		buildActiveActorsList();
-		if (g_grim->getGameType() == GType_GRIM) {
-			foreach (Actor *a, _activeActors) {
-				if (a->isVisible())
-					a->draw();
-			}
-		} else {
-			Bitmap *background = _currSet->_currSetup->_bkgndBm;
-			uint32 numLayers = background->_data->_numLayers;
-			int32 currentLayer = numLayers - 1;
-			foreach (Actor *a, _activeActors) {
-				if (a->getSortOrder() < 0)
-					break;
-
-				while (a->getSortOrder() < currentLayer * 10 && currentLayer >= 0) {
-					background->drawLayer(currentLayer--);
-				}
-
-				if (a->isVisible())
-					a->draw();
-			}
-		}
-
-
-		flagRefreshShadowMask(false);
-
-		// Draw overlying scene components
-		// The overlay objects should be drawn on top of everything else,
-		// including 3D objects such as Manny and the message tube
-		_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
+		drawNormalMode();
 
 		g_driver->drawBuffers();
 		drawPrimitives();
@@ -594,6 +510,73 @@ void GrimEngine::updateDisplayScene() {
 		_prevSmushFrame = 0;
 		_movieTime = 0;
 	}
+}
+
+void GrimEngine::drawNormalMode() {
+	_prevSmushFrame = 0;
+	_movieTime = 0;
+
+	_currSet->drawBackground();
+
+	// Draw underlying scene components
+	// Background objects are drawn underneath everything except the background
+	// There are a bunch of these, especially in the tube-switcher room
+	_currSet->drawBitmaps(ObjectState::OBJSTATE_BACKGROUND);
+
+	// State objects are drawn on top of other things, such as the flag
+	// on Manny's message tube
+	_currSet->drawBitmaps(ObjectState::OBJSTATE_STATE);
+
+	// Play SMUSH Animations
+	// This should occur on top of all underlying scene objects,
+	// a good example is the tube switcher room where some state objects
+	// need to render underneath the animation or you can't see what's going on
+	// This should not occur on top of everything though or Manny gets covered
+	// up when he's next to Glottis's service room
+	if (g_movie->isPlaying() && _movieSetup == _currSet->getCurrSetup()->_name) {
+		_movieTime = g_movie->getMovieTime();
+		if (g_movie->isUpdateNeeded()) {
+			g_driver->prepareMovieFrame(g_movie->getDstSurface());
+			g_movie->clearUpdateNeeded();
+		}
+		if (g_movie->getFrame() >= 0)
+			g_driver->drawMovieFrame(g_movie->getX(), g_movie->getY());
+		else
+			g_driver->releaseMovieFrame();
+	}
+
+	// Underlay objects must be drawn on top of movies
+	// Otherwise the lighthouse door will always be open as the underlay for
+	// the closed door will be overdrawn by a movie used as background image.
+	_currSet->drawBitmaps(ObjectState::OBJSTATE_UNDERLAY);
+
+	// Draw Primitives
+	foreach (PrimitiveObject *p, PrimitiveObject::getPool()) {
+		p->draw();
+	}
+
+	_currSet->setupCamera();
+
+	g_driver->set3DMode();
+
+	if (_setupChanged) {
+		cameraPostChangeHandle(_currSet->getSetup());
+		_setupChanged = false;
+	}
+
+	// Draw actors
+	buildActiveActorsList();
+	foreach (Actor *a, _activeActors) {
+		if (a->isVisible())
+			a->draw();
+	}
+
+	flagRefreshShadowMask(false);
+
+	// Draw overlying scene components
+	// The overlay objects should be drawn on top of everything else,
+	// including 3D objects such as Manny and the message tube
+	_currSet->drawBitmaps(ObjectState::OBJSTATE_OVERLAY);
 }
 
 void GrimEngine::doFlip() {
@@ -612,7 +595,7 @@ void GrimEngine::doFlip() {
 		unsigned int currentTime = g_system->getMillis();
 		unsigned int delta = currentTime - _lastFrameTime;
 		if (delta > 500) {
-			sprintf(_fps, "%7.2f", (double)(_frameCounter * 1000) / (double)delta );
+			sprintf(_fps, "%7.2f", (double)(_frameCounter * 1000) / (double)delta);
 			_frameCounter = 0;
 			_lastFrameTime = currentTime;
 		}
@@ -825,7 +808,7 @@ void GrimEngine::savegameRestore() {
 	g_driver->restoreState(_savedState);
 	Debug::debug(Debug::Engine, "Renderer restored successfully.");
 
-	g_imuse->restoreState(_savedState);
+	g_sound->restoreState(_savedState);
 	Debug::debug(Debug::Engine, "iMuse restored successfully.");
 
 	g_movie->restoreState(_savedState);
@@ -985,7 +968,7 @@ void GrimEngine::savegameSave() {
 	g_driver->saveState(_savedState);
 	Debug::debug(Debug::Engine, "Renderer saved successfully.");
 
-	g_imuse->saveState(_savedState);
+	g_sound->saveState(_savedState);
 	Debug::debug(Debug::Engine, "iMuse saved successfully.");
 
 	g_movie->saveState(_savedState);
@@ -1068,7 +1051,7 @@ Set *GrimEngine::loadSet(const Common::String &name) {
 		}
 		Common::SeekableReadStream *stream;
 		stream = g_resourceloader->openNewStreamFile(filename.c_str());
-		if(!stream)
+		if (!stream)
 			error("Could not find scene file %s", name.c_str());
 
 		s = new Set(name, stream);
@@ -1156,16 +1139,7 @@ void GrimEngine::buildActiveActorsList() {
 	_activeActors.clear();
 	foreach (Actor *a, Actor::getPool()) {
 		if ((_mode == NormalMode && a->isInSet(_currSet->getName())) || a->isInOverworld()) {
-			if (getGameType() == GType_MONKEY4) {
-				Common::List<Actor *>::iterator it = _activeActors.begin();
-				for (; it != _activeActors.end(); ++it) {
-					if (a->getSortOrder() >= (*it)->getSortOrder())
-						break;
-				}
-				_activeActors.insert(it, a);
-			} else {
-				_activeActors.push_back(a);
-			}
+			_activeActors.push_back(a);
 		}
 	}
 	_buildActiveActorsList = false;
@@ -1228,6 +1202,10 @@ void GrimEngine::openMainMenuDialog() {
 void GrimEngine::pauseEngineIntern(bool pause) {
 	g_imuse->pause(pause);
 	g_movie->pause(pause);
+}
+
+void GrimEngine::debugLua(const Common::String &str) {
+	lua_dostring(str.c_str());
 }
 
 } // end of namespace Grim

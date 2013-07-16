@@ -36,7 +36,7 @@ public:
 	PatchedFile();
 	virtual ~PatchedFile();
 
-	bool load(Common::SeekableReadStream *file, Common::String patchName);
+	bool load(Common::SeekableReadStream *file, const Common::String &patchName);
 
 	// Common::ReadStream implementation
 	virtual bool eos() const;
@@ -88,21 +88,17 @@ PatchedFile::PatchedFile():
 }
 
 PatchedFile::~PatchedFile() {
-	if (diffBuffer)
-		delete[] diffBuffer;
+	delete[] diffBuffer;
 
-	if (_file)
-		delete _file;
+	delete _file;
 
-	if (_ctrl)
-		delete _ctrl;
-	if (_diff)
-		delete _diff;
-	if (!(_flags & FLAG_MIX_DIFF_EXTRA) && _extra)
+	delete _ctrl;
+	delete _diff;
+	if (!(_flags & FLAG_MIX_DIFF_EXTRA))
 		delete _extra;
 }
 
-bool PatchedFile::load(Common::SeekableReadStream *file, Common::String patchName) {
+bool PatchedFile::load(Common::SeekableReadStream *file, const Common::String &patchName) {
 	uint8 md5_p[16], md5_f[16];
 	uint32 zctrllen, zdatalen, zextralen;
 	Common::File patch;
@@ -134,7 +130,7 @@ bool PatchedFile::load(Common::SeekableReadStream *file, Common::String patchNam
 	file->seek(0, SEEK_SET);
 	patch.read(md5_p, 16);
 	if (memcmp(md5_p, md5_f, 16) != 0 || (uint32)file->size() != patch.readUint32LE()) {
-		Debug::debug(Debug::Patchr,"%s targets a different file", _patchName.c_str());
+		Debug::debug(Debug::Patchr, "%s targets a different file", _patchName.c_str());
 		return false;
 	}
 
@@ -208,17 +204,17 @@ uint32 PatchedFile::read(void *dataPtr, uint32 dataSize) {
 				if (_diff->err() || rd != diffRead)
 					error("%s: Corrupted patchfile", _patchName.c_str());
 
-				#ifdef SCUMM_64BITS
-				for (uint32 i = 0; i < diffRead/8; ++i)
-					*((uint64*)data + i) ^= *((uint64*)diffBuffer + i);
+#ifdef SCUMM_64BITS
+				for (uint32 i = 0; i < diffRead / 8; ++i)
+					*((uint64 *)data + i) ^= *((uint64 *)diffBuffer + i);
 				for (uint32 i = diffRead - diffRead % 8; i < diffRead; ++i)
 					data[i] ^= diffBuffer[i];
-				#else
-				for (uint32 i = 0; i < diffRead/4; ++i)
-					*((uint32*)data + i) ^= *((uint32*)diffBuffer + i);
+#else
+				for (uint32 i = 0; i < diffRead / 4; ++i)
+					*((uint32 *)data + i) ^= *((uint32 *)diffBuffer + i);
 				for (uint32 i = diffRead - diffRead % 4; i < diffRead; ++i)
 					data[i] ^= diffBuffer[i];
-				#endif
+#endif
 
 				readSize -= diffRead;
 				data += diffRead;
@@ -269,10 +265,10 @@ bool PatchedFile::readNextInst() {
 
 	//Sanity checks
 	if (_ctrl->err() ||
-		(int32(diffCopy) > _file->size() - _file->pos()) ||
-		(int32(diffCopy) > _diff->size() - _diff->pos()) ||
-		(int32(extraCopy) > _extra->size() - _extra->pos()) ||
-		(jump > _file->size() - _file->pos()))
+			(int32(diffCopy) > _file->size() - _file->pos()) ||
+			(int32(diffCopy) > _diff->size() - _diff->pos()) ||
+			(int32(extraCopy) > _extra->size() - _extra->pos()) ||
+			(jump > _file->size() - _file->pos()))
 		error("%s: Corrupted patchfile. istrleft = %d", _patchName.c_str(), instrLeft);
 
 	--instrLeft;

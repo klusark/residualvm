@@ -46,6 +46,7 @@ class Set;
 class TextObject;
 class PrimitiveObject;
 class Debugger;
+class LuaBase;
 
 enum GrimGameType {
 	GType_GRIM,
@@ -152,7 +153,7 @@ public:
 	 * Tell the engine that an actor has been moved into/outside a set,
 	 * and so that it should rebuild the list of active ones.
 	 */
-	void invalidateActiveActorsList();
+	virtual void invalidateActiveActorsList();
 	/**
 	 * Return a list of the currently active actors, i. e. the actors in the current set.
 	 */
@@ -183,11 +184,11 @@ public:
 	TextObjectDefaults _sayLineDefaults, _printLineDefaults, _blastTextDefaults;
 
 	virtual void openMainMenuDialog();
+	void debugLua(const Common::String &str);
 
 protected:
 	virtual void pauseEngineIntern(bool pause);
 
-private:
 	void handleControls(Common::EventType type, const Common::KeyState &key);
 	void handleChars(Common::EventType type, const Common::KeyState &key);
 	void handleExit();
@@ -198,6 +199,8 @@ private:
 	void buildActiveActorsList();
 	void savegameCallback();
 	void createRenderer();
+	virtual LuaBase *createLua();
+	virtual void drawNormalMode();
 
 	void savegameSave();
 	void saveGRIM();

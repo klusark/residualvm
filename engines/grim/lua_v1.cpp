@@ -21,6 +21,7 @@
  */
 
 #include "common/endian.h"
+#include "common/savefile.h"
 #include "common/system.h"
 
 #include "graphics/pixelbuffer.h"
@@ -406,8 +407,12 @@ void Lua_V1::FileFindFirst() {
 	Lua_V1::FileFindDispose();
 
 	const char *extension = lua_getstring(extObj);
+	Common::String searchString = extension;
+	if (searchString == "*.gsv") {
+		searchString = "grim*.gsv";
+	}
 	Common::SaveFileManager *saveFileMan = g_system->getSavefileManager();
-	g_grim->_listFiles = saveFileMan->listSavefiles(Common::String("grim??") + extension);
+	g_grim->_listFiles = saveFileMan->listSavefiles(searchString);
 	Common::sort(g_grim->_listFiles.begin(), g_grim->_listFiles.end());
 	g_grim->_listFilesIter = g_grim->_listFiles.begin();
 

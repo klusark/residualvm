@@ -30,48 +30,9 @@
 #include "engines/grim/gfx_base.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/colormap.h"
+#include "engines/grim/sprite.h"
 
 namespace Grim {
-
-void Sprite::draw() const {
-	if (!_visible)
-		return;
-
-	_material->select();
-	g_driver->drawSprite(this);
-}
-
-void Sprite::loadBinary(Common::SeekableReadStream *stream) {
-	if (!stream)
-		return;
-
-	uint32 namelength = stream->readUint32LE();
-	stream->skip(namelength);
-
-	stream->seek(40, SEEK_CUR);
-	uint32 texnamelength = stream->readUint32LE();
-	char *texname = new char[texnamelength];
-	stream->read(texname, texnamelength);
-	/* unknown = */ stream->readUint32LE();
-	float width, height;
-	float offX, offY;
-	char data[16];
-	stream->read(data, sizeof(data));
-	width = get_float(data);
-	height = get_float(data + 4);
-	offX = get_float(data + 8);
-	offY = get_float(data + 12);
-
-
-	_material = g_resourceloader->loadMaterial(texname, 0);
-	_width = width;
-	_height = height;
-	_next = NULL;
-	_visible = true;
-	_pos.set(-offX, offY, 0);
-
-	delete[] texname;
-}
 
 
 /**
@@ -408,9 +369,10 @@ Mesh::Mesh() :	_numFaces(0),
 				_verticesI(NULL),
 				_vertNormals(NULL),
 				_numTextureVerts(0),
-				_textureVerts(NULL) {
+				_textureVerts(NULL),
+				_faces(NULL) {
 	_name[0] = '\0';
-					
+
 }
 
 
@@ -465,7 +427,7 @@ void Mesh::loadBinary(Common::SeekableReadStream *data, Material *materials[]) {
 	data->seek(24, SEEK_CUR);
 }
 
-void Mesh::loadText(TextSplitter *ts, Material* materials[]) {
+void Mesh::loadText(TextSplitter *ts, Material *materials[]) {
 	ts->scanString("name %32s", 1, _name);
 	ts->scanString("radius %f", 1, &_radius);
 
@@ -623,7 +585,7 @@ void ModelNode::loadBinary(Common::SeekableReadStream *data, ModelNode *hierNode
 	_yaw = get_float(f);
 	data->read(f, 4);
 	_roll = get_float(f);
-	_animPos.set(0,0,0);
+	_animPos.set(0, 0, 0);
 	_animPitch = 0;
 	_animYaw = 0;
 	_animRoll = 0;
@@ -770,8 +732,8 @@ void ModelNode::addSprite(Sprite *sprite) {
 }
 
 void ModelNode::removeSprite(Sprite *sprite) {
-	Sprite* curr = _sprite;
-	Sprite* prev = NULL;
+	Sprite *curr = _sprite;
+	Sprite *prev = NULL;
 	while (curr) {
 		if (curr == sprite) {
 			if (prev)

@@ -28,6 +28,7 @@
 #include "engines/grim/costume.h"
 #include "engines/grim/costume/chore.h"
 
+#include "engines/grim/emi/emi.h"
 #include "engines/grim/emi/costumeemi.h"
 #include "engines/grim/emi/skeleton.h"
 #include "engines/grim/emi/costume/emiskel_component.h"
@@ -62,7 +63,7 @@ void Lua_V2::SetActorGlobalAlpha() {
 		return;
 
 	if (!lua_isnumber(alphaObj))
-			return;
+		return;
 
 	float alpha = lua_getnumber(alphaObj);
 	if (alpha == Actor::AlphaOff ||
@@ -292,7 +293,7 @@ void Lua_V2::AdvanceChore() {
 	if (c) {
 		if (!c->isPlaying()) {
 			warning("AdvanceChore() called on stopped chore %s (%s)",
-			        c->getName(), c->getOwner()->getFilename().c_str());
+					c->getName(), c->getOwner()->getFilename().c_str());
 			if (c->isLooping()) {
 				c->getOwner()->playChoreLooping(c->getName());
 			} else {
@@ -301,6 +302,21 @@ void Lua_V2::AdvanceChore() {
 		}
 		c->setTime(time * 1000);
 	}
+}
+
+// TODO: Implement, verify, and rename parameters
+void Lua_V2::CompleteChore() {
+	lua_Object param1 = lua_getparam(1);
+	lua_Object param2 = lua_getparam(2);
+
+	if (!lua_isuserdata(param1) || !lua_isnumber(param2))
+		error("Lua_V2::CompleteChore - Unknown params");
+
+	// Guesswork based on StopChore:
+	int chore = lua_getuserdata(param1);
+	float time = lua_getnumber(param2);
+
+	error("Lua_V2::CompleteChore(%d, %f) - TODO: Implement opcode", chore, time);
 }
 
 void Lua_V2::SetActorSortOrder() {
@@ -316,6 +332,8 @@ void Lua_V2::SetActorSortOrder() {
 	Actor *actor = getactor(actorObj);
 	int order = (int)lua_getnumber(orderObj);
 	actor->setSortOrder(order);
+
+	g_emi->invalidateSortOrder();
 }
 
 void Lua_V2::GetActorSortOrder() {
@@ -428,7 +446,7 @@ void Lua_V2::SetActorRestChore() {
 	if (lua_isnil(choreObj)) {
 		chore = -1;
 	} else {
-		const char * choreStr = lua_getstring(choreObj);
+		const char *choreStr = lua_getstring(choreObj);
 		chore = costume->getChoreId(choreStr);
 	}
 
@@ -459,7 +477,7 @@ void Lua_V2::SetActorWalkChore() {
 	if (lua_isnil(choreObj)) {
 		chore = -1;
 	} else {
-		const char * choreStr = lua_getstring(choreObj);
+		const char *choreStr = lua_getstring(choreObj);
 		chore = costume->getChoreId(choreStr);
 	}
 
@@ -523,7 +541,7 @@ void Lua_V2::SetActorTalkChore() {
 	if (lua_isnil(choreObj)) {
 		chore = -1;
 	} else {
-		const char * choreStr = lua_getstring(choreObj);
+		const char *choreStr = lua_getstring(choreObj);
 		chore = costume->getChoreId(choreStr);
 	}
 
@@ -554,7 +572,7 @@ void Lua_V2::SetActorMumblechore() {
 	if (lua_isnil(choreObj)) {
 		chore = -1;
 	} else {
-		const char * choreStr = lua_getstring(choreObj);
+		const char *choreStr = lua_getstring(choreObj);
 		chore = costume->getChoreId(choreStr);
 	}
 
@@ -803,21 +821,21 @@ void Lua_V2::AttachActor() {
 	lua_Object actorObj = lua_getparam(2);
 	lua_Object jointObj = lua_getparam(3);
 
-	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A','C','T','R'))
+	if (!lua_isuserdata(actorObj) || lua_tag(actorObj) != MKTAG('A', 'C', 'T', 'R'))
 		return;
 
 	Actor *actor = getactor(actorObj);
 	if (!actor)
 		return;
 
-	if (!lua_isuserdata(attachedObj) || lua_tag(attachedObj) != MKTAG('A','C','T','R'))
+	if (!lua_isuserdata(attachedObj) || lua_tag(attachedObj) != MKTAG('A', 'C', 'T', 'R'))
 		return;
 
 	Actor *attached = getactor(attachedObj);
 	if (!attached)
 		return;
 
-	const char * joint = NULL;
+	const char *joint = NULL;
 	if (!lua_isnil(jointObj)) {
 		joint = lua_getstring(jointObj);
 	}

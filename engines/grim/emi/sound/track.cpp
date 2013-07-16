@@ -34,18 +34,21 @@ SoundTrack::SoundTrack() {
 	_handle = NULL;
 	_paused = false;
 	_disposeAfterPlaying = DisposeAfterUse::YES;
+
+	// Initialize to a plain sound for now
+	_soundType = Audio::Mixer::kPlainSoundType;
 }
 
 SoundTrack::~SoundTrack() {
 	if (_stream && (_disposeAfterPlaying == DisposeAfterUse::NO || !_handle))
 		delete _stream;
 }
-	
+
 Common::String SoundTrack::getSoundName() {
 	return _soundName;
 }
 
-void SoundTrack::setSoundName(Common::String name) {
+void SoundTrack::setSoundName(const Common::String &name) {
 	_soundName = name;
 }
 

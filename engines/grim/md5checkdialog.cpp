@@ -38,8 +38,8 @@ MD5CheckDialog::MD5CheckDialog() :
 	const int screenH = g_system->getOverlayHeight();
 
 	Common::String message =
-	"ResidualVM will now verify the game data files, to make sure you have the best gaming experience.\n"
-	"This may take a while, please wait.\nSuccessive runs will not check them again.";
+		"ResidualVM will now verify the game data files, to make sure you have the best gaming experience.\n"
+		"This may take a while, please wait.\nSuccessive runs will not check them again.";
 
 	// First, determine the size the dialog needs. For this we have to break
 	// down the string into lines, and taking the maximum of their widths.
@@ -80,7 +80,7 @@ MD5CheckDialog::MD5CheckDialog() :
 void MD5CheckDialog::drawDialog() {
 	GUI::Dialog::drawDialog();
 
-	g_gui.theme()->drawSlider(_progressRect, _progressRect.width() * _progress);
+	g_gui.theme()->drawSlider(_progressRect, (int)(_progressRect.width() * _progress));
 }
 
 void MD5CheckDialog::check() {

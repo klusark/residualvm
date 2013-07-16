@@ -68,8 +68,11 @@ Set::~Set() {
 			delete _sectors[i];
 		}
 		delete[] _sectors;
-		foreach (ObjectState *s, _states)
+		while (!_states.empty()) {
+			ObjectState *s = _states.front();
+			_states.pop_front();
 			delete s;
+		}
 	}
 }
 
@@ -126,7 +129,7 @@ void Set::loadText(TextSplitter &ts) {
 
 	// Calculate the number of sectors
 	ts.expectString("section: sectors");
-	if (ts.isEof())	// Sectors are optional, but section: doesn't seem to be
+	if (ts.isEof()) // Sectors are optional, but section: doesn't seem to be
 		return;
 
 	int sectorStart = ts.getLineNumber();
@@ -180,9 +183,6 @@ void Set::loadBinary(Common::SeekableReadStream *data) {
 		_lights[i]._id = i;
 		_lightsList.push_back(&_lights[i]);
 	}
-
-	// bypass light stuff for now
-	_numLights = 0;
 
 	_numSectors = data->readUint32LE();
 	// Allocate and fill an array of sector info
@@ -264,7 +264,7 @@ bool Set::restoreState(SaveGame *savedState) {
 		_setups[i].restoreState(savedState);
 	}
 
-    //Sectors
+	//Sectors
 	_numSectors = savedState->readLESint32();
 	if (_numSectors > 0) {
 		_sectors = new Sector*[_numSectors];
@@ -347,8 +347,8 @@ void Set::Setup::loadBinary(Common::SeekableReadStream *data) {
 	int fNameLen = 0;
 	fNameLen = data->readUint32LE();
 
-	char* fileName = new char[fNameLen];
-	data->read(fileName,fNameLen);
+	char *fileName = new char[fNameLen];
+	data->read(fileName, fNameLen);
 
 	_bkgndZBm = NULL;
 	_bkgndBm = Bitmap::create(fileName);
@@ -424,7 +424,16 @@ void Light::load(TextSplitter &ts) {
 	_name = buf;
 
 	ts.scanString(" type %256s", 1, buf);
-	_type = buf;
+	Common::String type = buf;
+	if (type == "spot") {
+		_type = Spot;
+	} else if (type == "omni") {
+		_type = Omni;
+	} else if (type == "direct") {
+		_type = Direct;
+	} else {
+		error("Light::load() Unknown type of light: %s", buf);
+	}
 
 	ts.scanString(" position %f %f %f", 3, &_pos.x(), &_pos.y(), &_pos.z());
 	ts.scanString(" direction %f %f %f", 3, &_dir.x(), &_dir.y(), &_dir.z());
@@ -442,8 +451,48 @@ void Light::load(TextSplitter &ts) {
 }
 
 void Light::loadBinary(Common::SeekableReadStream *data) {
-	// skip lights for now
-	data->seek(100, SEEK_CUR);
+	char name[32];
+	data->read(name, 32);
+	_name = name;
+
+	// All guesses.
+	data->read(&_pos.x(), 4);
+	data->read(&_pos.y(), 4);
+	data->read(&_pos.z(), 4);
+	data->read(&_dir.x(), 4);
+	data->read(&_dir.y(), 4);
+	data->read(&_dir.z(), 4);
+	data->read(&_intensity, 4);
+
+	// This relies on the order of the LightType enum, which might not be correct.
+	// The order should only affect EMI, and not Grim.
+	_type = (LightType)data->readSint32LE();
+
+	if (_type == UnknownLight) {
+		warning("light %s using UnkownLight", name);
+	}
+
+	// No ideas for these two.
+	float i;
+	data->read(&i, 4);
+	int j = data->readSint32LE();
+	// This always seems to be 0
+	if (j != 0) {
+		warning("Light::loadBinary j != 0");
+	}
+
+	_color.getRed() = data->readSint32LE();
+	_color.getGreen() = data->readSint32LE();
+	_color.getBlue() = data->readSint32LE();
+
+	//Don't know what any of these do.
+	float n, o, p, q;
+	data->read(&n, 4);
+	data->read(&o, 4);
+	data->read(&p, 4);
+	data->read(&q, 4);
+
+	_enabled = true;
 }
 
 void Light::saveState(SaveGame *savedState) const {
@@ -452,7 +501,7 @@ void Light::saveState(SaveGame *savedState) const {
 	savedState->writeBool(_enabled);
 
 	//type
-	savedState->writeString(_type);
+	savedState->writeLEUint32(_type);
 
 	savedState->writeVector3d(_pos);
 	savedState->writeVector3d(_dir);
@@ -467,7 +516,18 @@ void Light::saveState(SaveGame *savedState) const {
 bool Light::restoreState(SaveGame *savedState) {
 	_name = savedState->readString();
 	_enabled = savedState->readBool();
-	_type = savedState->readString();
+	if (savedState->saveMinorVersion() > 7) {
+		_type = (LightType)savedState->readLEUint32();
+	} else {
+		Common::String type = savedState->readString();
+		if (type == "spot") {
+			_type = Spot;
+		} else if (type == "omni") {
+			_type = Omni;
+		} else if (type == "direct") {
+			_type = Direct;
+		}
+	}
 
 	_pos           = savedState->readVector3d();
 	_dir           = savedState->readVector3d();
@@ -698,15 +758,15 @@ void Set::setSoundPosition(const char *soundName, const Math::Vector3d &pos, int
 		newVolume = _maxVolume;
 	g_sound->setVolume(soundName, newVolume);
 
-	Math::Vector3d cameraVector =_currSetup->_interest - _currSetup->_pos;
-	Math::Vector3d up(0,0,1);
+	Math::Vector3d cameraVector = _currSetup->_interest - _currSetup->_pos;
+	Math::Vector3d up(0, 0, 1);
 	Math::Vector3d right;
 	cameraVector.normalize();
 	float roll = -_currSetup->_roll * LOCAL_PI / 180.f;
 	float cosr = cos(roll);
 	// Rotate the up vector by roll.
 	up = up * cosr + Math::Vector3d::crossProduct(cameraVector, up) * sin(roll) +
-		cameraVector * Math::Vector3d::dotProduct(cameraVector, up) * (1 - cosr);
+		 cameraVector * Math::Vector3d::dotProduct(cameraVector, up) * (1 - cosr);
 	right = Math::Vector3d::crossProduct(cameraVector, up);
 	right.normalize();
 	float angle = atan2(Math::Vector3d::dotProduct(vector, right),

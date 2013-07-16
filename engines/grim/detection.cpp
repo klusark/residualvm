@@ -25,6 +25,7 @@
 
 #include "engines/grim/grim.h"
 #include "engines/grim/savegame.h"
+#include "engines/grim/emi/emi.h"
 
 #include "common/system.h"
 #include "common/savefile.h"
@@ -241,7 +242,6 @@ static const GrimGameDescription gameDescriptions[] = {
 		},
 		GType_GRIM
 	},
-#ifdef ENABLE_MONKEY4
 	{
 		// Escape from Monkey Island English
 		{
@@ -411,7 +411,6 @@ static const GrimGameDescription gameDescriptions[] = {
 		},
 		GType_MONKEY4
 	},
-#endif // ENABLE_MONKEY4
 
 	{ AD_TABLE_END_MARKER, GType_GRIM }
 };
@@ -454,8 +453,13 @@ public:
 bool GrimMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
 	const GrimGameDescription *gd = (const GrimGameDescription *)desc;
 
-	if (gd)
-		*engine = new GrimEngine(syst, gd->desc.flags, gd->gameType, gd->desc.platform, gd->desc.language);
+	if (gd) {
+		if (gd->gameType == GType_MONKEY4) {
+			*engine = new EMIEngine(syst, gd->desc.flags, gd->gameType, gd->desc.platform, gd->desc.language);
+		} else {
+			*engine = new GrimEngine(syst, gd->desc.flags, gd->gameType, gd->desc.platform, gd->desc.language);
+		}
+	}
 
 	return gd != 0;
 }

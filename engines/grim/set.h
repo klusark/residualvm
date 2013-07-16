@@ -109,7 +109,7 @@ public:
 	ObjectState *addObjectState(int setupID, ObjectState::Position pos, const char *bitmap, const char *zbitmap, bool transparency);
 	ObjectState *findState(const Common::String &filename);
 
-	struct Setup {		// Camera setup data
+	struct Setup {      // Camera setup data
 		void load(Set *set, int id, TextSplitter &ts);
 		void loadBinary(Common::SeekableReadStream *data);
 		void setupCamera() const;
@@ -149,15 +149,22 @@ private:
 	friend class GrimEngine;
 };
 
-class Light {		// Set lighting data
+class Light {       // Set lighting data
 public:
 	void load(TextSplitter &ts);
 	void loadBinary(Common::SeekableReadStream *data);
 	void saveState(SaveGame *savedState) const;
 	bool restoreState(SaveGame *savedState);
 
+	enum LightType {
+		Spot = 1,
+		Direct = 2,
+		Omni = 3,
+		UnknownLight = 4
+	};
+
 	Common::String _name;
-	Common::String _type;
+	LightType _type;
 	Math::Vector3d _pos, _dir;
 	Color _color;
 	float _intensity, _umbraangle, _penumbraangle;

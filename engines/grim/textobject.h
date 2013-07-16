@@ -62,13 +62,13 @@ public:
 protected:
 	TextObjectCommon();
 
-	Color _fgColor;
+	const Font *_font;
 	int _x, _y;
 	int _posX, _posY;
 	int _width, _height;
 	int _justify;
-	const Font *_font;
 	int _duration;
+	Color _fgColor;
 	bool _positioned;
 };
 
@@ -120,16 +120,21 @@ public:
 	};
 
 protected:
-	bool _created;
 	void setupText();
-	int _numberLines;
-	bool _blastDraw;
-	bool _isSpeech;
+
 	Common::String _textID;
+
+	Common::String *_lines;
+
+	void *_userData;
+
+	int _numberLines;
 	int _elapsedTime;
 	int _maxLineWidth;
-	Common::String *_lines;
-	void *_userData;
+
+	bool _blastDraw;
+	bool _isSpeech;
+	bool _created;
 };
 
 } // end of namespace Grim

@@ -20,6 +20,7 @@
  *
  */
 
+#include "common/textconsole.h"
 #include "common/timer.h"
 
 #include "engines/grim/savegame.h"
@@ -269,7 +270,7 @@ void Imuse::callback() {
 
 			if (track->curRegion == -1) {
 				switchToNextRegion(track);
-				if (!track->stream)	// Seems we reached the end of the stream
+				if (!track->stream) // Seems we reached the end of the stream
 					continue;
 			}
 
@@ -364,9 +365,8 @@ void Imuse::switchToNextRegion(Track *track) {
 		track->curRegion = region;
 		if (track->curHookId == sampleHookId)
 			track->curHookId = 0;
-		else
-			if (track->curHookId == 0x80)
-				track->curHookId = 0;
+		else if (track->curHookId == 0x80)
+			track->curHookId = 0;
 	}
 
 	Debug::debug(Debug::Imuse, "Imuse::switchToNextRegion(): REGION %d: soundName:%s", (int)track->curRegion, track->soundName);

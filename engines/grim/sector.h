@@ -49,7 +49,7 @@ public:
 		HotType = 0x8000
 	};
 
-	Sector() : _vertices(NULL), _origVertices(NULL), _invalid(false), _shrinkRadius(0.f) {}
+	Sector();
 	Sector(const Sector &other);
 	virtual ~Sector();
 
@@ -84,6 +84,8 @@ public:
 	};
 	void getExitInfo(const Math::Vector3d &start, const Math::Vector3d &dir, struct ExitInfo *result) const;
 
+	int getNumSortplanes() { return _numSortplanes; }
+	int getSortplane(int setup) { return _sortplanes[setup]; }
 	int getNumVertices() { return _numVertices; }
 	Math::Vector3d *getVertices() { return _vertices; }
 	Math::Vector3d getNormal() { return _normal; }
@@ -93,6 +95,8 @@ public:
 
 private:
 	int _numVertices, _id;
+	int _numSortplanes;
+	int *_sortplanes;
 
 	Common::String _name;
 	SectorType _type;

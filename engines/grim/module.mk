@@ -31,9 +31,11 @@ MODULE_OBJS := \
 	emi/sound/codecs/scx.o \
 	emi/animationemi.o \
 	emi/costumeemi.o \
+	emi/emi.o \
 	emi/modelemi.o \
 	emi/skeleton.o \
 	emi/poolsound.o \
+	emi/layer.o \
 	emi/lua_v2.o \
 	emi/lua_v2_actor.o \
 	emi/lua_v2_sound.o \
@@ -118,6 +120,7 @@ MODULE_OBJS := \
 	set.o \
 	sector.o \
 	sound.o \
+	sprite.o \
 	stuffit.o \
 	textobject.o \
 	textsplit.o \

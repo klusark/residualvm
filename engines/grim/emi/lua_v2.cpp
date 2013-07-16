@@ -22,6 +22,7 @@
 
 #include "common/endian.h"
 #include "common/foreach.h"
+#include "common/savefile.h"
 
 #include "engines/grim/emi/lua_v2.h"
 #include "engines/grim/lua/lauxlib.h"
@@ -31,6 +32,9 @@
 #include "engines/grim/grim.h"
 #include "engines/grim/gfx_base.h"
 #include "engines/grim/font.h"
+
+#include "engines/grim/emi/layer.h"
+#include "engines/grim/emi/emi.h"
 
 #include "engines/grim/movie/movie.h"
 
@@ -308,13 +312,23 @@ void Lua_V2::GetCameraRoll() {
 	lua_pushnumber(0);
 }
 
-// I suspect that pushtext and poptext stack the current text objects.
 void Lua_V2::PushText() {
-	warning("Lua_V2::PushText: implement opcode");
+	Common::List<TextObject *> *textobjects = new Common::List<TextObject *>;
+	TextObject::Pool::iterator it = TextObject::getPool().begin();
+	for (; it != TextObject::getPool().end(); ++it) {
+		textobjects->push_back(*it);
+		TextObject::getPool().removeObject((*it)->getId());
+	}
+	g_emi->pushText(textobjects);
 }
 
 void Lua_V2::PopText() {
-	warning("Lua_V2::PopText: implement opcode");
+	Common::List<TextObject *> *textobjects = g_emi->popText();
+	Common::List<TextObject *>::iterator it = textobjects->begin();
+	for (; it != textobjects->end(); ++it) {
+		TextObject::getPool().addObject(*it);
+	}
+	delete textobjects;
 }
 
 void Lua_V2::GetSectorName() {
@@ -393,14 +407,14 @@ void Lua_V2::GetMemoryCardId() {
 void Lua_V2::LocalizeString() {
 	char msgId[50], buf[1000];
 	lua_Object strObj = lua_getparam(1);
+	msgId[0] = 0;
 
 	if (lua_isstring(strObj)) {
 		const char *str = lua_getstring(strObj);
 		Common::String msg = parseMsgText(str, msgId);
 		sprintf(buf, "/%s/%s", msgId, msg.c_str());
-		str = buf;
 
-		lua_pushstring(str);
+		lua_pushstring(buf);
 	}
 }
 
@@ -424,9 +438,72 @@ void Lua_V2::OverWorldToScreen() { // TODO
 	lua_pushnumber(0);
 }
 
+void Lua_V2::NewLayer() {
+	lua_Object param1 = lua_getparam(1);
+	lua_Object param2 = lua_getparam(2);
+	lua_Object param3 = lua_getparam(3);
+
+	const char *til = NULL;
+	int sortorder = 0, zero = 0;
+	if (lua_isstring(param1) && lua_isnumber(param2) && lua_isnumber(param3)) {
+		til = lua_getstring(param1);
+		sortorder = (int)lua_getnumber(param2);
+
+		//This one is always specified, but also always 0...
+		zero = (int)lua_getnumber(param3);
+
+		Layer *layer = new Layer(til, sortorder);
+
+		// Need to return something that can be looked up later
+		lua_pushusertag(layer->getId(), MKTAG('L','A','Y','R'));
+	}
+}
+
+void Lua_V2::FreeLayer() {
+	lua_Object param1 = lua_getparam(1);
+	if (lua_isuserdata(param1) && lua_tag(param1) == MKTAG('L','A','Y','R')) {
+		int layer = (int)lua_getuserdata(param1);
+		Layer *l = Layer::getPool().getObject(layer);
+		delete l;
+	}
+}
+
+void Lua_V2::AdvanceLayerFrame() {
+	lua_Object param1 = lua_getparam(1);
+	lua_Object param2 = lua_getparam(2);
+	if (lua_isuserdata(param1) && lua_tag(param1) == MKTAG('L','A','Y','R') && lua_isnumber(param2)) {
+		int layer = (int)lua_getuserdata(param1);
+		int one = (int)lua_getnumber(param2);
+		Layer *l = Layer::getPool().getObject(layer);
+		l->advanceFrame(one);
+	}
+}
+
+void Lua_V2::SetLayerFrame() {
+	lua_Object param1 = lua_getparam(1);
+	lua_Object param2 = lua_getparam(2);
+	if (lua_isuserdata(param1) && lua_tag(param1) == MKTAG('L','A','Y','R') && lua_isnumber(param2)) {
+		int layer = (int)lua_getuserdata(param1);
+		int one = (int)lua_getnumber(param2);
+		Layer *l = Layer::getPool().getObject(layer);
+		l->setFrame(one);
+	}
+}
+
+void Lua_V2::SetLayerSortOrder() {
+	lua_Object param1 = lua_getparam(1);
+	lua_Object param2 = lua_getparam(2);
+	if (lua_isuserdata(param1) && lua_tag(param1) != MKTAG('L','A','Y','R') && lua_isnumber(param2)) {
+		int layer = (int)lua_getuserdata(param1);
+		int sortorder = (int)lua_getnumber(param2);
+		Layer *l = Layer::getPool().getObject(layer);
+		l->setSortOrder(sortorder);
+	}
+}
+
 // Stub function for builtin functions not yet implemented
 /*static void stubWarning(const char *funcName) {
-	warning("Stub function: %s", funcName);
+    warning("Stub function: %s", funcName);
 }*/
 
 static void stubError(const char *funcName) {
@@ -469,22 +546,62 @@ static void stubError(const char *funcName) {
 // STUB_FUNC2(Lua_V2::IsPointInSector)
 // STUB_FUNC2(Lua_V2::ThumbnailFromFile)
 
+// Stubbed functions with semi-known arguments:
+// TODO: Verify and implement these: (And add type-checking), also rename params
+void Lua_V2::GetCameraPitch() {
+	error("Lua_V2::GetCameraPitch() - TODO: Implement opcode");
+}
+
+// No idea about parameter types for these three, presumably float
+void Lua_V2::PitchCamera() {
+	lua_Object param1 = lua_getparam(1);
+
+	if (!lua_isnumber(param1))
+		error("Lua_V2::PitchCamera - Unknown parameters");
+
+	float floatValue = lua_getnumber(param1);
+	error("Lua_V2::PitchCamera(%f) - TODO: Implement opcode", floatValue);
+}
+
+void Lua_V2::RollCamera() {
+	lua_Object param1 = lua_getparam(1);
+
+	if (!lua_isnumber(param1))
+		error("Lua_V2::RollCamera - Unknown parameters");
+
+	float floatValue = lua_getnumber(param1);
+	error("Lua_V2::RollCamera(%f) - TODO: Implement opcode", floatValue);
+}
+
+void Lua_V2::YawCamera() {
+	lua_Object param1 = lua_getparam(1);
+
+	if (!lua_isnumber(param1))
+		error("Lua_V2::YawCamera - Unknown parameters");
+
+	float floatValue = lua_getnumber(param1);
+	error("Lua_V2::YawCamera(%f) - TODO: Implement opcode", floatValue);
+}
+
+void Lua_V2::NukeAllScriptLocks() {
+	error("Lua_V2::NukeAllScriptLocks() - TODO: Implement opcode");
+}
+
+void Lua_V2::FRUTEY_Begin() {
+	lua_Object param1 = lua_getparam(1);
+
+	if (!lua_isstring(param1))
+		error("Lua_V2::FRUTEY_Begin - Unknown parameters");
+
+	const char *paramText = lua_getstring(param1);
+	error("Lua_V2::FRUTEY_Begin(%s) - TODO: Implement opcode", paramText);
+}
+
+void Lua_V2::FRUTEY_End() {
+	error("Lua_V2::FRUTEY_End() - TODO: Implement opcode");
+}
+
 // Monkey specific LUA_OPCODEs
-STUB_FUNC2(Lua_V2::CompleteChore)
-STUB_FUNC2(Lua_V2::GetSoundVolume)
-STUB_FUNC2(Lua_V2::SetSoundVolume)
-STUB_FUNC2(Lua_V2::UpdateSoundPosition)
-STUB_FUNC2(Lua_V2::ImStateHasLooped)
-STUB_FUNC2(Lua_V2::YawCamera)
-STUB_FUNC2(Lua_V2::GetCameraPitch)
-STUB_FUNC2(Lua_V2::PitchCamera)
-STUB_FUNC2(Lua_V2::RollCamera)
-STUB_FUNC2(Lua_V2::NewLayer)
-STUB_FUNC2(Lua_V2::FreeLayer)
-STUB_FUNC2(Lua_V2::SetLayerSortOrder)
-STUB_FUNC2(Lua_V2::SetLayerFrame)
-STUB_FUNC2(Lua_V2::AdvanceLayerFrame)
-STUB_FUNC2(Lua_V2::NukeAllScriptLocks)
 STUB_FUNC2(Lua_V2::ToggleDebugDraw)
 STUB_FUNC2(Lua_V2::ToggleDrawCameras)
 STUB_FUNC2(Lua_V2::ToggleDrawLights)
@@ -499,8 +616,6 @@ STUB_FUNC2(Lua_V2::SectEditDelete)
 STUB_FUNC2(Lua_V2::SectEditInsert)
 STUB_FUNC2(Lua_V2::SectEditSortAdd)
 STUB_FUNC2(Lua_V2::SectEditForgetIt)
-STUB_FUNC2(Lua_V2::FRUTEY_Begin)
-STUB_FUNC2(Lua_V2::FRUTEY_End)
 
 struct luaL_reg monkeyMainOpcodes[] = {
 	// Monkey specific LUA_OPCODEs:

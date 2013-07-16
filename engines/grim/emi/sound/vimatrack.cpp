@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  */
- 
+
 #include "common/stream.h"
 #include "common/mutex.h"
 #include "common/textconsole.h"
@@ -32,15 +32,15 @@
 namespace Grim {
 
 struct Region {
-	int32 offset;		// offset of region
-	int32 length;		// lenght of region
+	int32 offset;       // offset of region
+	int32 length;       // lenght of region
 };
 
 struct SoundDesc {
-	uint16 freq;		// frequency
-	byte channels;		// stereo or mono
-	byte bits;			// 8, 12, 16
-	int numRegions;		// number of Regions
+	uint16 freq;        // frequency
+	byte channels;      // stereo or mono
+	byte bits;          // 8, 12, 16
+	int numRegions;     // number of Regions
 	Region *region;
 	bool endFlag;
 	bool inUse;
@@ -52,7 +52,7 @@ struct SoundDesc {
 	uint32 headerSize;
 	Common::SeekableReadStream *inStream;
 };
-	
+
 bool VimaTrack::isPlaying() {
 	// FIXME: Actually clean up the data better
 	// (we don't currently handle the case where it isn't asked for through isPlaying, or deleted explicitly).
@@ -62,8 +62,8 @@ bool VimaTrack::isPlaying() {
 	} else
 		return true;
 }
-	
-bool VimaTrack::openSound(Common::String voiceName, Common::SeekableReadStream *file) {
+
+bool VimaTrack::openSound(const Common::String &voiceName, Common::SeekableReadStream *file) {
 	_soundName = voiceName;
 	_mcmp = new McmpMgr();
 	_desc = new SoundDesc();
@@ -72,7 +72,7 @@ bool VimaTrack::openSound(Common::String voiceName, Common::SeekableReadStream *
 	_desc->mcmpMgr = _mcmp;
 	int headerSize = 0;
 
-	if(_mcmp->openSound(voiceName.c_str(), file, headerSize)) {
+	if (_mcmp->openSound(voiceName.c_str(), file, headerSize)) {
 		parseSoundHeader(_desc, headerSize);
 
 		_stream = Audio::makeQueuingAudioStream(_desc->freq, (false));
@@ -85,7 +85,7 @@ bool VimaTrack::openSound(Common::String voiceName, Common::SeekableReadStream *
 }
 void VimaTrack::parseSoundHeader(SoundDesc *sound, int &headerSize) {
 	Common::SeekableReadStream *data = sound->inStream;
-	
+
 	uint32 tag = data->readUint32BE();
 	if (tag == MKTAG('R','I','F','F')) {
 		sound->endFlag = false;
@@ -111,25 +111,25 @@ int32 VimaTrack::getDataFromRegion(SoundDesc *sound, int region, byte **buf, int
 	//assert(checkForProperHandle(sound));
 	assert(buf && offset >= 0 && size >= 0);
 	assert(region >= 0 && region < sound->numRegions);
-	
+
 	int32 region_offset = sound->region[region].offset;
 	int32 region_length = sound->region[region].length;
-	
+
 	if (offset + size > region_length) {
 		size = region_length - offset;
 		sound->endFlag = true;
 	} else {
 		sound->endFlag = false;
 	}
-	
+
 	if (sound->mcmpData) {
 		size = sound->mcmpMgr->decompressSample(region_offset + offset, size, buf);
 	} else {
-		*buf = (byte *)malloc(sizeof(byte) * size);
+		*buf = new byte[size];
 		sound->inStream->seek(region_offset + offset + sound->headerSize, SEEK_SET);
 		sound->inStream->read(*buf, size);
 	}
-	
+
 	return size;
 }
 void VimaTrack::playTrack() {
@@ -139,30 +139,30 @@ void VimaTrack::playTrack() {
 	}
 	byte *data = NULL;
 	int32 result = 0;
-	
+
 	int32 curRegion = -1;
 	int32 regionOffset = 0;
 	int32 mixerFlags = Audio::FLAG_16BITS;
-	
+
 	curRegion++;
-	
+
 	int channels = _desc->channels;
-	
+
 	//int32 mixer_size = track->feedSize / _callbackFps;
 	int32 mixer_size = _desc->freq * channels * 2;
-	
+
 	if (_stream->endOfData()) { // FIXME: Currently we just allocate a bunch here, try to find the correct size instead.
 		mixer_size *= 8;
 	}
-	
+
 	if (channels == 1)
 		mixer_size &= ~1;
 	if (channels == 2)
 		mixer_size &= ~3;
-	
+
 	if (mixer_size == 0)
 		return;
-	
+
 	do {
 		result = getDataFromRegion(_desc, curRegion, &data, regionOffset, mixer_size);
 		if (channels == 1) {
@@ -171,19 +171,19 @@ void VimaTrack::playTrack() {
 		if (channels == 2) {
 			result &= ~3;
 		}
-		
+
 		if (result > mixer_size)
 			result = mixer_size;
-		
+
 		if (g_system->getMixer()->isReady()) {
-			((Audio::QueuingAudioStream*)_stream)->queueBuffer(data, result, DisposeAfterUse::YES, mixerFlags);
+			((Audio::QueuingAudioStream *)_stream)->queueBuffer(data, result, DisposeAfterUse::YES, mixerFlags);
 			regionOffset += result;
 		} else
 			delete[] data;
-		
+
 		if (curRegion >= 0 && curRegion < _desc->numRegions - 1) {
 			curRegion++;
-			
+
 			if (!_stream) {
 				return;
 			}
@@ -200,7 +200,7 @@ void VimaTrack::playTrack() {
 	}
 }
 
-VimaTrack::VimaTrack(Common::String soundName) {
+VimaTrack::VimaTrack(const Common::String &soundName) {
 	_soundType = Audio::Mixer::kSpeechSoundType;
 	_handle = new Audio::SoundHandle();
 	_file = NULL;
@@ -211,14 +211,14 @@ VimaTrack::VimaTrack(Common::String soundName) {
 
 VimaTrack::~VimaTrack() {
 	stop();
-	
+
 	delete _mcmp;
-	
+
 	if (_desc) {
 		delete[] _desc->region;
 		delete _desc->inStream;
 	}
-	
+
 	delete _handle;
 	delete _desc;
 }

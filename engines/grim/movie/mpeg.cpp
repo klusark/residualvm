@@ -39,7 +39,7 @@ MpegPlayer::MpegPlayer() : MoviePlayer() {
 	_videoDecoder = new Video::MPEGPSDecoder();
 }
 
-bool MpegPlayer::loadFile(Common::String filename) {
+bool MpegPlayer::loadFile(const Common::String &filename) {
 	_fname = Common::String("Video/") + filename + ".pss";
 
 	Common::SeekableReadStream *stream = SearchMan.createReadStreamForMember(_fname);
@@ -51,7 +51,7 @@ bool MpegPlayer::loadFile(Common::String filename) {
 
 	return true;
 }
-	
+
 } // end of namespace Grim
 
 #endif // USE_MPEG2
