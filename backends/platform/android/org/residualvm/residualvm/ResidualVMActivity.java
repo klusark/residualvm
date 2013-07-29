@@ -161,6 +161,7 @@ public class ResidualVMActivity extends Activity {
 		_events = new ResidualVMEvents(this, _residualvm);
 
 		main_surface.setOnKeyListener(_events);
+		main_surface.setOnGenericMotionListener(_events);
 
 		_residualvm_thread = new Thread(_residualvm, "ResidualVM");
 		_residualvm_thread.start();

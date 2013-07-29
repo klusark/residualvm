@@ -210,8 +210,8 @@ static const Common::KeyCode jkeymap[] = {
 	Common::KEYCODE_INVALID,
 	Common::KEYCODE_PAGEUP, // 102: OUYA L1
 	Common::KEYCODE_PAGEDOWN, // 103: OUYA R1
-	Common::KEYCODE_PAGEUP, // 104: OUYA L2
-	Common::KEYCODE_PAGEDOWN, // 105: OUYA R2
+	Common::KEYCODE_LSHIFT, // 104: OUYA L2
+	Common::KEYCODE_LSHIFT, // 105: OUYA R2
 	Common::KEYCODE_ESCAPE, // 106: Press left stick
 	Common::KEYCODE_DELETE, // 107: Press right stick
 };
