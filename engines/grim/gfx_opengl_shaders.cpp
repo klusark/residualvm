@@ -238,6 +238,17 @@ void GfxOpenGLS::setupTexturedCenteredQuad() {
 	_spriteProgram->disableVertexAttribute("color", Math::Vector4d(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
+void GfxOpenGLS::setupPrimitives() {
+	glGenBuffers(ARRAYSIZE(_primitiveVBOs), _primitiveVBOs);
+	_currentPrimitive = 0;
+}
+
+GLuint GfxOpenGLS::nextPrimitive() {
+	GLuint ret = _primitiveVBOs[_currentPrimitive];
+	_currentPrimitive = (_currentPrimitive + 1) % ARRAYSIZE(_primitiveVBOs);
+	return ret;
+}
+
 void GfxOpenGLS::setupShaders() {
 	bool isEMI = g_grim->getGameType() == GType_MONKEY4;
 
@@ -251,10 +262,14 @@ void GfxOpenGLS::setupShaders() {
 	_actorProgram = Graphics::Shader::fromFiles(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
 	_spriteProgram = _actorProgram->clone();
 
+	static const char* primAttributes[] = {"position", NULL};
+	_primitiveProgram = Graphics::Shader::fromFiles("grim_primitive", primAttributes);
+
 	setupBigEBO();
 	setupQuadEBO();
 	setupTexturedQuad();
 	setupTexturedCenteredQuad();
+	setupPrimitives();
 }
 
 byte *GfxOpenGLS::setupScreen(int screenW, int screenH, bool fullscreen) {
@@ -1169,15 +1184,104 @@ void GfxOpenGLS::loadEmergFont() {
 
 
 void GfxOpenGLS::drawRectangle(const PrimitiveObject *primitive) {
+	float x1 = primitive->getP1().x * _scaleW;
+	float y1 = primitive->getP1().y * _scaleH;
+	float x2 = primitive->getP2().x * _scaleW;
+	float y2 = primitive->getP2().y * _scaleH;
 
+	const Color color(primitive->getColor());
+	const Math::Vector3d colorV =
+	  Math::Vector3d(color.getRed(), color.getGreen(), color.getBlue()) / 256.f;
+
+	float data[] = { x1, y1, x2, y1, x2, y2, x1, y2};
+
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+
+	GLuint prim = nextPrimitive();
+	glBindBuffer(GL_ARRAY_BUFFER, prim);
+	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), data, GL_DYNAMIC_DRAW);
+
+	_primitiveProgram->enableVertexAttribute("position", prim, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	_primitiveProgram->use(true);
+	_primitiveProgram->setUniform("color", colorV);
+	_primitiveProgram->setUniform("filled", GL_FALSE);
+	_primitiveProgram->setUniform("scaleWH", Math::Vector2d(1.f / _screenWidth, 1.f / _screenHeight));
+
+	glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::drawLine(const PrimitiveObject *primitive) {
 
+	float x1 = primitive->getP1().x * _scaleW;
+	float y1 = primitive->getP1().y * _scaleH;
+	float x2 = primitive->getP2().x * _scaleW;
+	float y2 = primitive->getP2().y * _scaleH;
+
+	const Color &color = primitive->getColor();
+	const Math::Vector3d colorV =
+	  Math::Vector3d(color.getRed(), color.getGreen(), color.getBlue()) / 256.f;
+
+	float data[] = { x1, y1, x2, y2};
+
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+
+	GLuint prim = nextPrimitive();
+	glBindBuffer(GL_ARRAY_BUFFER, prim);
+	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(float), data, GL_DYNAMIC_DRAW);
+
+	_primitiveProgram->enableVertexAttribute("position", prim, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	_primitiveProgram->use(true);
+	_primitiveProgram->setUniform("color", colorV);
+	_primitiveProgram->setUniform("filled", GL_FALSE);
+	_primitiveProgram->setUniform("scaleWH", Math::Vector2d(1.f / _screenWidth, 1.f / _screenHeight));
+
+	glDrawArrays(GL_LINES, 0, 2);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void GfxOpenGLS::drawPolygon(const PrimitiveObject *primitive) {
+	float x1 = primitive->getP1().x * _scaleW;
+	float y1 = primitive->getP1().y * _scaleH;
+	float x2 = primitive->getP2().x * _scaleW;
+	float y2 = primitive->getP2().y * _scaleH;
+	float x3 = primitive->getP3().x * _scaleW;
+	float y3 = primitive->getP3().y * _scaleH;
+	float x4 = primitive->getP4().x * _scaleW;
+	float y4 = primitive->getP4().y * _scaleH;
 
+	const Color &color = primitive->getColor();
+	const Math::Vector3d colorV =
+	  Math::Vector3d(color.getRed(), color.getGreen(), color.getBlue()) / 256.f;
+
+	float data[] = { x1, y1, x2, y2, x3, y3, x4, y4};
+
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+
+	GLuint prim = nextPrimitive();
+	glBindBuffer(GL_ARRAY_BUFFER, prim);
+	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), data, GL_DYNAMIC_DRAW);
+
+	_primitiveProgram->enableVertexAttribute("position", prim, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	_primitiveProgram->use(true);
+	_primitiveProgram->setUniform("color", colorV);
+	_primitiveProgram->setUniform("filled", GL_FALSE);
+	_primitiveProgram->setUniform("scaleWH", Math::Vector2d(1.f / _screenWidth, 1.f / _screenHeight));
+
+	glDrawArrays(GL_LINES, 0, 4);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 }
 
 

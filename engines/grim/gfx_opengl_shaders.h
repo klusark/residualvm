@@ -214,6 +214,7 @@ private:
 	Graphics::Shader* _smushProgram;
 	GLuint _smushVBO, _quadEBO, _bigQuadEBO;
 	Graphics::Shader* _textProgram;
+	Graphics::Shader* _primitiveProgram;
 
 	int _smushWidth;
 	int _smushHeight;
@@ -251,6 +252,11 @@ private:
 
 	Light *_lights;
 	bool _lightsEnabled;
+
+	void setupPrimitives();
+	GLuint nextPrimitive();
+	GLuint _primitiveVBOs[32];
+	uint32 _currentPrimitive;
 };
 }
 #endif
