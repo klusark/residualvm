@@ -257,6 +257,7 @@ private:
 	GLuint nextPrimitive();
 	GLuint _primitiveVBOs[32];
 	uint32 _currentPrimitive;
+	void drawGenericPrimitive(const float *vertices, uint32 numVertices, const PrimitiveObject *primitive);
 };
 }
 #endif
