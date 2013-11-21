@@ -204,7 +204,7 @@ protected:
 
 private:
 	float _alpha;
-	uint32 _maxLights;
+	int _maxLights;
 	GLuint _emergTexture;
 	Graphics::Shader* _emergProgram;
 
