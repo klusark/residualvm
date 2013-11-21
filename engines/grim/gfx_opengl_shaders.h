@@ -215,6 +215,7 @@ private:
 	GLuint _smushVBO, _quadEBO;
 	Graphics::Shader* _textProgram;
 	Graphics::Shader* _primitiveProgram;
+	Graphics::Shader* _irisProgram;
 
 	int _smushWidth;
 	int _smushHeight;
@@ -257,6 +258,7 @@ private:
 	GLuint _primitiveVBOs[32];
 	uint32 _currentPrimitive;
 	void drawGenericPrimitive(const float *vertices, uint32 numVertices, const PrimitiveObject *primitive);
+	GLuint _irisVBO;
 };
 }
 #endif
