@@ -3,13 +3,18 @@
 # These must be incremented for each market upload
 ANDROID_VERSIONCODE = 1000
 
+ANDROID_TARGET_VERSION = 15
+
 NDK_BUILD = $(ANDROID_NDK)/ndk-build
+SDK_ANDROID = $(ANDROID_SDK)/tools/android
 
 PATH_DIST = $(srcdir)/dists/android
 PATH_RESOURCES = $(PATH_DIST)/res
 
 PORT_DISTFILES = $(PATH_DIST)/README.Android
 DIST_ANDROID_CONTROLS = $(PATH_DIST)/assets/arrows.tga
+DIST_JAVA_SRC_DIRS = \
+	$(srcdir)/backends/platform/android/org
 
 RESOURCES = \
 	$(PATH_BUILD_RES)/values/strings.xml \
@@ -20,29 +25,15 @@ RESOURCES = \
 	$(PATH_BUILD_RES)/drawable/residualvm.png \
 	$(PATH_BUILD_RES)/drawable/residualvm_big.png
 
-JAVA_SOURCES = \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/ResidualVMEvents.java \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/Unpacker.java \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/ResidualVM.java \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/ResidualVMApplication.java \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/ResidualVMActivity.java \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/EditableSurfaceView.java \
-	$(PATH_BUILD)/src/org/residualvm/residualvm/PluginProvider.java
-
 JAVA_EXTRA_LIBS = \
 	$(PATH_BUILD)/libs/ouya-sdk.jar
 
-BUILD_ESSENTIALS = \
-	build.xml \
-	local.properties \
-	project.properties
-
-DIST_BUILD_ESSENTIALS = $(addprefix $(PATH_DIST)/,$(BUILD_ESSENTIALS))
 DIST_ANDROID_MK = $(PATH_DIST)/jni/Android.mk
 
 PATH_BUILD = ./build.tmp
 PATH_BUILD_ASSETS = $(PATH_BUILD)/assets
 PATH_BUILD_RES = $(PATH_BUILD)/res
+PATH_BUILD_SRC = $(PATH_BUILD)/src
 PATH_BUILD_LIBRESIDUALVM = $(PATH_BUILD)/libs/armeabi/libresidualvm.so
 
 PATH_GEN_TOP = $(PATH_BUILD)/java
@@ -80,10 +71,9 @@ ifdef USE_OPENGL_SHADERS
 	$(INSTALL) -c -m 644 $(DIST_FILES_SHADERS) $(PATH_BUILD_ASSETS)/shaders
 endif
 
-$(PATH_BUILD): $(DIST_BUILD_ESSENTIALS) $(DIST_ANDROID_MK)
+$(PATH_BUILD): $(DIST_ANDROID_MK)
 	$(MKDIR) -p $(PATH_BUILD) $(PATH_BUILD)/res
 	$(MKDIR) -p $(PATH_BUILD)/src $(PATH_BUILD)/libs $(PATH_BUILD)/jni
-	$(CP) $(DIST_BUILD_ESSENTIALS) $(PATH_BUILD)
 	$(CP) $(DIST_ANDROID_MK) $(PATH_BUILD)/jni
 
 $(PATH_BUILD_LIBRESIDUALVM): libresidualvm.so
@@ -93,7 +83,12 @@ $(PATH_BUILD_LIBRESIDUALVM): libresidualvm.so
 
 $(PATH_BUILD_RES): $(RESOURCES)
 
-$(APK_MAIN): $(PATH_BUILD) $(FILE_MANIFEST) $(PATH_BUILD_RES) $(PATH_BUILD_ASSETS) $(JAVA_SOURCES) $(JAVA_EXTRA_LIBS) $(PATH_BUILD_LIBRESIDUALVM)
+$(PATH_BUILD_SRC): $(PATH_BUILD)
+	$(MKDIR) $(PATH_BUILD_SRC)
+	ln -s $(abspath $(DIST_JAVA_SRC_DIRS)) $(PATH_BUILD_SRC)
+
+$(APK_MAIN): $(PATH_BUILD) $(FILE_MANIFEST) $(PATH_BUILD_RES) $(PATH_BUILD_ASSETS) $(PATH_BUILD_SRC) $(JAVA_EXTRA_LIBS) $(PATH_BUILD_LIBRESIDUALVM)
+	$(SDK_ANDROID) update project -p $(PATH_BUILD) -t android-$(ANDROID_TARGET_VERSION) -n ResidualVM
 	(cd $(PATH_BUILD); ant debug)
 	$(CP) $(PATH_BUILD)/bin/ResidualVM-debug.apk $@
 
@@ -125,4 +120,4 @@ androiddistdebug: all
 		sed 's/$$/\r/' < $$i > debug/`basename $$i`.txt; \
 	done
 
-.PHONY: androidrelease androidtest
+.PHONY: androidrelease androidtest $(PATH_BUILD_SRC)
