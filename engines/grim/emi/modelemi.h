@@ -29,6 +29,12 @@
 #include "math/vector3d.h"
 #include "math/vector4d.h"
 
+#ifdef USE_OPENGL_SHADERS
+namespace Graphics {
+class Shader;
+}
+#endif
+
 namespace Common {
 class SeekableReadStream;
 }
@@ -58,6 +64,10 @@ public:
 	uint32 _texID;
 	uint32 _flags;
 	EMIModel *_parent;
+	
+#ifdef USE_OPENGL_SHADERS
+	uint32 _indicesEBO;
+#endif
 
 	EMIMeshFace() : _faceLength(0), _numFaces(0), _hasTexture(0), _texID(0), _flags(0), _indexes(NULL), _parent(NULL) { }
 	~EMIMeshFace();
@@ -103,6 +113,15 @@ public:
 	int _setType;
 
 	Common::String _fname;
+
+#ifdef USE_OPENGL_SHADERS
+	Graphics::Shader *_shader;
+	uint32 _texCoordsVBO;
+	uint32 _colorMapVBO;
+	uint32 _normalsVBO;
+	uint32 _verticesVBO;
+#endif
+
 public:
 	EMIModel(const Common::String &filename, Common::SeekableReadStream *data, EMIModel *parent = NULL);
 	~EMIModel();
