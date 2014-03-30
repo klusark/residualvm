@@ -215,9 +215,7 @@ LuaBase *GrimEngine::createLua() {
 }
 
 void GrimEngine::createRenderer() {
-#ifdef USE_OPENGL
 	_softRenderer = ConfMan.getBool("soft_renderer");
-#endif
 
 	if (!_softRenderer && !g_system->hasFeature(OSystem::kFeatureOpenGL)) {
 		warning("gfx backend doesn't support hardware rendering");
@@ -225,11 +223,9 @@ void GrimEngine::createRenderer() {
 	}
 
 	if (_softRenderer) {
-		g_driver = CreateGfxTinyGL();
-#ifdef USE_OPENGL
+		g_driver = CreateGfxDriver(GFX_DRIVER_TINYGL);
 	} else {
-		g_driver = CreateGfxOpenGL();
-#endif
+		g_driver = CreateGfxDriver(GFX_DRIVER_OPENGL);
 	}
 }
 
