@@ -543,7 +543,6 @@ void Costume::saveState(SaveGame *state) const {
 
 		if (c) {
 			state->writeBool(c->_visible);
-			state->writeVector3d(c->_matrix.getPosition());
 			c->saveState(state);
 		}
 	}
@@ -572,7 +571,10 @@ bool Costume::restoreState(SaveGame *state) {
 
 		if (c) {
 			c->_visible = state->readBool();
-			c->_matrix.setPosition(state->readVector3d());
+			if (state->saveMinorVersion() < 10) {
+				// skip the old _matrix vector
+				state->readVector3d();
+			}
 			c->restoreState(state);
 		}
 	}

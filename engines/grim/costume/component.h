@@ -64,7 +64,6 @@ protected:
 	int _parentID;
 	bool _visible;
 	Component *_parent, *_child, *_sibling;
-	Math::Matrix4 _matrix;
 	Costume *_cost;
 	Common::String _name;
 
