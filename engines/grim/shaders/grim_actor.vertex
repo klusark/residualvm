@@ -19,19 +19,20 @@ in vec3 position;
 in vec2 texcoord;
 in vec4 color;
 in vec3 normal;
+in int texturen;
 
 uniform highp mat4 modelMatrix;
 uniform highp mat4 viewMatrix;
 uniform highp mat4 projMatrix;
 uniform highp mat4 extraMatrix;
-uniform highp vec2 texScale;
-uniform bool textured;
 uniform light lights[maxLights];
+uniform highp vec2 texscale[8];
 uniform shadow_info shadow;
 uniform bool lightsEnabled;
 
 out vec2 Texcoord;
 out vec4 Color;
+flat out int textureno;
 
 void main()
 {
@@ -51,9 +52,9 @@ void main()
 	}
 
 	gl_Position = projMatrix * viewMatrix * pos;
-
-	if (textured) {
-		Texcoord = vec2(0.0, 1.0) + (texcoord / texScale);
+	textureno = texturen;
+	if (texturen != 0) {
+		Texcoord = vec2(0.0, 1.0) + (texcoord / texscale[texturen - 1]);
 	} else {
 		Texcoord = vec2(0.0, 0.0);
 	}

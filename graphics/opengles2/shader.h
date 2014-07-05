@@ -109,6 +109,12 @@ public:
 			glUniform1f(pos, f);
 	}
 
+	void setUniform1iv(const char *uniform, int size, int *f) {
+		GLint pos = getUniformLocation(uniform);
+		if (pos != -1)
+			glUniform1iv(pos, size, f);
+	}
+
 
 	GLint getUniformLocation(const char *uniform) const {
 		UniformsMap::iterator kv = _uniforms->find(uniform);

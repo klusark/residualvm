@@ -1,12 +1,12 @@
 in vec2 Texcoord;
 in vec4 Color;
+flat in int textureno;
 
-uniform sampler2D tex;
 uniform sampler2D texZBuf;
-uniform bool textured;
 uniform bool hasZBuffer;
 uniform vec2 texcropZBuf;
 uniform vec2 screenSize;
+uniform sampler2D texturesample[8];
 
 //#define SGSPLUS_FIX
 #ifndef SGSPLUS_FIX
@@ -27,7 +27,7 @@ void checkZBuffer()
 #endif
 	vec2 sampled = texture(texZBuf, zCoord * texcropZBuf).ra;
 	float sceneZ = sampled.y + sampled.x / 256.0; 		
-	
+
 	if (gl_FragCoord.z * 1.0039 > sceneZ)
 		discard;
 }
@@ -37,7 +37,7 @@ void main()
 	if (hasZBuffer)
 		checkZBuffer();
 	outColor = Color;
-	if (textured) {
-		outColor *= texture(tex, Texcoord);
+	if (textureno != 0) {
+		outColor *= texture(texturesample[textureno - 1], Texcoord);
 	}
 }

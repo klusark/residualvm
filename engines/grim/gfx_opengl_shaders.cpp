@@ -121,6 +121,7 @@ struct EMIModelUserData {
 struct ModelUserData {
 	Graphics::Shader *_shader;
 	uint32 _meshInfoVBO;
+	uint32 _num;
 };
 
 struct ShadowUserData {
@@ -209,7 +210,7 @@ void GfxOpenGLS::setupZBuffer() {
 	float height = _gameHeight;
 
 	glGenTextures(1, (GLuint *)&_zBufTex);
-	glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, _zBufTex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -217,6 +218,7 @@ void GfxOpenGLS::setupZBuffer() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, nextHigher2((int)width), nextHigher2((int)height), 0, format, type, NULL);
 	glActiveTexture(GL_TEXTURE0);
+
 
 	_zBufTexCrop = Math::Vector2d(width / nextHigher2((int)width), height / nextHigher2((int)height));
 }
@@ -290,7 +292,7 @@ void GfxOpenGLS::setupShaders() {
 	_textProgram = Graphics::Shader::fromFiles("text", commonAttributes);
 	_emergProgram = Graphics::Shader::fromFiles("emerg", commonAttributes);
 
-	static const char* actorAttributes[] = {"position", "texcoord", "color", "normal", NULL};
+	static const char* actorAttributes[] = {"position", "texcoord", "color", "normal", "texturen", NULL};
 	_actorProgram = Graphics::Shader::fromFiles(isEMI ? "emi_actor" : "grim_actor", actorAttributes);
 	_spriteProgram = _actorProgram->clone();
 
@@ -579,7 +581,7 @@ void GfxOpenGLS::startActorDraw(const Actor *actor) {
 		_actorProgram->setUniform("extraMatrix", extraMatrix);
 		_actorProgram->setUniform("mvpMatrix", _mvpMatrix);
 		_actorProgram->setUniform("tex", 0);
-		_actorProgram->setUniform("texZBuf", 1);
+		_actorProgram->setUniform("texZBuf", 9);
 		_actorProgram->setUniform("hasZBuffer", hasZBuffer);
 		_actorProgram->setUniform("texcropZBuf", _zBufTexCrop);
 		_actorProgram->setUniform("screenSize", Math::Vector2d(_screenWidth, _screenHeight));
@@ -792,31 +794,35 @@ void GfxOpenGLS::drawMesh(const Mesh *mesh) {
 	actorShader->use();
 	actorShader->setUniform("extraMatrix", _matrixStack.top());
 
-	const Material *curMaterial = NULL;
-	for (int i = 0; i < mesh->_numFaces;) {
+
+	int texture = 0;
+	const Material *mat = nullptr;
+	for (int i = 0; i < mesh->_numFaces; ++i) {
 		const MeshFace *face = &mesh->_faces[i];
-		if (face->getLight() == 0 && !isShadowModeActive())
-			disableLights();
-
-		curMaterial = face->getMaterial();
-		curMaterial->select();
-
-		int faces = 0;
-		for (; i < mesh->_numFaces; ++i) {
-			if (mesh->_faces[i].getMaterial() != curMaterial)
-				break;
-			faces += 3 * (mesh->_faces[i].getNumVertices() - 2);
+		if (face->getMaterial() != mat) {
+			mat = face->getMaterial();
+			glActiveTexture(GL_TEXTURE0 + texture);
+			mat->select();
+			Common::String uniform = Common::String::format("texscale[%u]", texture);
+			actorShader->setUniform(uniform.c_str(), Math::Vector2d(_selectedTexture->_width, _selectedTexture->_height));
+			texture++;
 		}
-
-		bool textured = face->hasTexture() && !_currentShadowArray;
-		actorShader->setUniform("textured", textured ? GL_TRUE : GL_FALSE);
-		actorShader->setUniform("texScale", Math::Vector2d(_selectedTexture->_width, _selectedTexture->_height));
-
-		glDrawArrays(GL_TRIANGLES, *(int *)face->_userData, faces);
-
-		if (face->getLight() == 0 && !isShadowModeActive())
-			enableLights();
 	}
+	int samplers[8];
+	for (int i = 0; i < 8; ++i) {
+		samplers[i] = i;
+	}
+
+	actorShader->setUniform1iv("texturesample", 8, samplers);
+	glDrawArrays(GL_TRIANGLES, 0, mud->_num);
+
+	int error = glGetError();
+	if (error != 0) {
+		const char *err = (const char *)gluErrorString(error);
+		warning("%d: %s", error, err);
+	}
+
+
 }
 
 void GfxOpenGLS::drawModelFace(const Mesh *mesh, const MeshFace *face) {
@@ -1185,7 +1191,7 @@ void GfxOpenGLS::drawDepthBitmap(int x, int y, int w, int h, char *data) {
 	prevY = y;
 	prevData = data;
 
-	glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, _zBufTex);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
@@ -1764,10 +1770,15 @@ void GfxOpenGLS::createEMIModel(EMIModel *model) {
 void GfxOpenGLS::createModel(Mesh *mesh) {
 	Common::Array<GrimVertex> meshInfo;
 	meshInfo.reserve(mesh->_numVertices * 5);
+	const Material *mat = nullptr;
+	int texture = 0;
 	for (int i = 0; i < mesh->_numFaces; ++i) {
 		MeshFace *face = &mesh->_faces[i];
-		face->_userData = new uint32;
-		*(uint32 *)face->_userData = meshInfo.size();
+
+		if (face->getMaterial() != mat) {
+			mat = face->getMaterial();
+			++texture;
+		}
 
 		if (face->getNumVertices() < 3)
 			continue;
@@ -1777,9 +1788,9 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 #define NORMAL(j) (&mesh->_vertNormals[3 * face->getVertex(j)])
 
 		for (int j = 2; j < face->getNumVertices(); ++j) {
-			meshInfo.push_back(GrimVertex(VERT(0), TEXVERT(0), NORMAL(0)));
-			meshInfo.push_back(GrimVertex(VERT(j-1), TEXVERT(j-1), NORMAL(j-1)));
-			meshInfo.push_back(GrimVertex(VERT(j), TEXVERT(j), NORMAL(j)));
+			meshInfo.push_back(GrimVertex(VERT(0), TEXVERT(0), NORMAL(0), texture));
+			meshInfo.push_back(GrimVertex(VERT(j-1), TEXVERT(j-1), NORMAL(j-1), texture));
+			meshInfo.push_back(GrimVertex(VERT(j), TEXVERT(j), NORMAL(j), texture));
 		}
 
 #undef VERT
@@ -1795,6 +1806,7 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 
 	ModelUserData *mud = new ModelUserData;
 	mesh->_userData = mud;
+	mud->_num = meshInfo.size();
 
 	mud->_meshInfoVBO = Graphics::Shader::createBuffer(GL_ARRAY_BUFFER, meshInfo.size() * sizeof(GrimVertex), &meshInfo[0], GL_STATIC_DRAW);
 
@@ -1803,6 +1815,7 @@ void GfxOpenGLS::createModel(Mesh *mesh) {
 	shader->enableVertexAttribute("position", mud->_meshInfoVBO, 3, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), 0);
 	shader->enableVertexAttribute("texcoord", mud->_meshInfoVBO, 2, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), 3 * sizeof(float));
 	shader->enableVertexAttribute("normal", mud->_meshInfoVBO, 3, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), 5 * sizeof(float));
+	shader->enableVertexAttribute("texturen", mud->_meshInfoVBO, 1, GL_FLOAT, GL_FALSE, sizeof(GrimVertex), offsetof(GrimVertex, _texture));
 	shader->disableVertexAttribute("color", Math::Vector4d(1.f, 1.f, 1.f, 1.f));
 }
 

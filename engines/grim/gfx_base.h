@@ -66,14 +66,16 @@ public:
 };
 
 struct GrimVertex {
-	GrimVertex(const float *verts, const float *texVerts, const float *normals) {
+	GrimVertex(const float *verts, const float *texVerts, const float *normals, int texture) {
 		memcpy(_position, verts, 3 * sizeof(float));
 		memcpy(_texcoord, texVerts, 2 * sizeof(float));
 		memcpy(_normal, normals, 3 * sizeof(float));
+		_texture = texture;
 	}
 	float _position[3];
 	float _texcoord[2];
 	float _normal[3];
+	int _texture;
 };
 
 /**
