@@ -22,6 +22,7 @@
 
 #include "engines/grim/emi/costume/emichore.h"
 #include "engines/grim/emi/modelemi.h"
+#include "engines/grim/savegame.h"
 
 namespace Grim {
 

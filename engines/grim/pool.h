@@ -26,9 +26,10 @@
 #include "common/hashmap.h"
 #include "common/list.h"
 
-#include "engines/grim/savegame.h"
 
 namespace Grim {
+
+class SaveGame;
 
 template<class T> class Pool;
 

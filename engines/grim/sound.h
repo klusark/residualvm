@@ -23,11 +23,10 @@
 #ifndef GRIM_SOUND_H
 #define GRIM_SOUND_H
 
-#include "engines/grim/savegame.h"
-
 namespace Grim {
 
 class EMISound;
+class SaveGame;
 
 class SoundPlayer {
 	EMISound *_emiSound;
