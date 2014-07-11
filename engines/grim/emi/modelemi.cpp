@@ -28,6 +28,7 @@
 #include "engines/grim/gfx_base.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/set.h"
+#include "engines/grim/actor.h"
 #include "engines/grim/emi/costumeemi.h"
 #include "engines/grim/emi/modelemi.h"
 #include "engines/grim/emi/animationemi.h"

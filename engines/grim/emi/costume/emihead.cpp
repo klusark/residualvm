@@ -25,6 +25,7 @@
 #include "engines/grim/emi/costumeemi.h"
 #include "engines/grim/emi/skeleton.h"
 #include "engines/grim/savegame.h"
+#include "engines/grim/actor.h"
 
 namespace Grim {
 

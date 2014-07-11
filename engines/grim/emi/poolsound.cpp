@@ -22,9 +22,12 @@
 
 #include "common/str.h"
 
+#include "engines/grim/emi/sound/aifftrack.h"
+
 #include "engines/grim/emi/poolsound.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/savegame.h"
+
 
 namespace Grim {
 

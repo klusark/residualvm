@@ -26,6 +26,7 @@
 #include "audio/mixer.h"
 
 namespace Common {
+	class SeekableReadStream;
 	class String;
 }
 

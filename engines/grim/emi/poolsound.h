@@ -23,11 +23,15 @@
 #ifndef GRIM_POOLSOUND_H
 #define GRIM_POOLSOUND_H
 
+#include "common/endian.h"
+
 #include "engines/grim/pool.h"
-#include "engines/grim/emi/sound/aifftrack.h"
 
 
 namespace Grim {
+
+class AIFFTrack;
+
 class PoolSound : public PoolObject<PoolSound> {
 public:
 	PoolSound();

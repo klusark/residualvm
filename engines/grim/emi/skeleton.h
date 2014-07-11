@@ -28,7 +28,6 @@
 #include "math/mathfwd.h"
 #include "math/quat.h"
 #include "engines/grim/object.h"
-#include "engines/grim/actor.h"
 
 namespace Common {
 class SeekableReadStream;

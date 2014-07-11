@@ -23,8 +23,11 @@
 #ifndef GRIM_VIMATRACK_H
 #define GRIM_VIMATRACK_H
 
-#include "common/str.h"
 #include "engines/grim/emi/sound/track.h"
+
+namespace Common {
+	class String;
+}
 
 namespace Grim {
 

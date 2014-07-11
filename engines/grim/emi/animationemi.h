@@ -28,9 +28,11 @@
 #include "math/quat.h"
 #include "engines/grim/animation.h"
 #include "engines/grim/object.h"
-#include "engines/grim/emi/skeleton.h"
 
 namespace Grim {
+
+struct Joint;
+class Skeleton;
 
 struct AnimRotation {
 	Math::Quaternion _quat;

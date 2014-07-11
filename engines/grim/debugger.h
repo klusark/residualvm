@@ -23,8 +23,6 @@
 #ifndef GRIM_DEBUGGER_H
 #define GRIM_DEBUGGER_H
 
-#include "common/debug.h"
-
 #include "gui/debugger.h"
 
 namespace Grim {

@@ -23,8 +23,6 @@
 #ifndef GRIM_BITMAP_H
 #define GRIM_BITMAP_H
 
-#include "graphics/pixelformat.h"
-
 #include "common/endian.h"
 #include "common/hashmap.h"
 #include "common/hash-str.h"
@@ -33,6 +31,7 @@
 
 namespace Graphics {
 class PixelBuffer;
+struct PixelFormat;
 }
 
 namespace Common {

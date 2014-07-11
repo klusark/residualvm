@@ -25,6 +25,7 @@
 #include "math/quat.h"
 #include "engines/grim/resource.h"
 #include "engines/grim/emi/animationemi.h"
+#include "engines/grim/emi/skeleton.h"
 #include "engines/grim/savegame.h"
 #include "common/textconsole.h"
 

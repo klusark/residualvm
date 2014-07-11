@@ -21,6 +21,7 @@
  */
 
 #include "common/mutex.h"
+#include "common/stream.h"
 #include "audio/mixer.h"
 #include "audio/audiostream.h"
 #include "audio/decoders/mp3.h"

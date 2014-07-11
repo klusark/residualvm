@@ -23,13 +23,16 @@
 #ifndef GRIM_MP3TRACK_H
 #define GRIM_MP3TRACK_H
 
-#include "common/str.h"
-#include "common/stream.h"
 #include "engines/grim/emi/sound/track.h"
 
 namespace Audio {
 	class AudioStream;
 	class SoundHandle;
+}
+
+namespace Common {
+	class SeekableReadStream;
+	class String;
 }
 
 namespace Grim {
