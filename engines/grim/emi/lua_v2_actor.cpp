@@ -1107,6 +1107,9 @@ bool Lua_V2::setChoreAndCostume(lua_Object choreObj, lua_Object costumeObj, lua_
 
 	if (!costume) {
 		costume = actor->getCurrentCostume();
+		if (!costume) {
+			return false;
+		}
 	}
 
 	const char *choreStr = lua_getstring(choreObj);
