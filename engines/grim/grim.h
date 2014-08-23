@@ -227,7 +227,7 @@ protected:
 	char _fps[8];
 	bool _doFlip;
 	bool _refreshShadowMask;
-	bool _shortFrame;
+	bool _shortFrame, resetShortFrame;
 	bool _setupChanged;
 	// This holds the name of the setup in which the movie must be drawed
 	Common::String _movieSetup;

@@ -25,6 +25,8 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_stderr
 #define FORBIDDEN_SYMBOL_EXCEPTION_stdin
 
+#include "emscripten/emscripten.h"
+
 #include "common/archive.h"
 #include "common/debug-channels.h"
 #include "common/file.h"
@@ -245,6 +247,12 @@ const char *GrimEngine::getUpdateFilename() {
 		return nullptr;
 }
 
+static void staticmainLoop()
+{
+	warning("frame");
+	g_grim->mainLoop();
+}
+
 Common::Error GrimEngine::run() {
 	// Try to see if we have the EMI Mac installer present
 	// Currently, this requires the data fork to be standalone
@@ -257,7 +265,7 @@ Common::Error GrimEngine::run() {
 			delete archive;
 	}
 
-	ConfMan.registerDefault("check_gamedata", true);
+	ConfMan.registerDefault("check_gamedata", false);
 	if (ConfMan.getBool("check_gamedata")) {
 		MD5CheckDialog d;
 		if (!d.runModal()) {
@@ -342,7 +350,20 @@ Common::Error GrimEngine::run() {
 
 	g_grim->setMode(NormalMode);
 	delete splash_bm;
-	g_grim->mainLoop();
+	g_grim->_movieTime = 0;
+	_frameTime = 0;
+	_frameStart = g_system->getMillis();
+	_frameCounter = 0;
+	_lastFrameTime = 0;
+	_prevSmushFrame = 0;
+	_refreshShadowMask = false;
+	_shortFrame = false;
+	resetShortFrame = false;
+	_changeHardwareState = false;
+	_changeFullscreenState = false;
+	_setupChanged = true;
+
+	emscripten_set_main_loop(staticmainLoop, 60, 1);
 
 	return Common::kNoError;
 }
@@ -637,20 +658,7 @@ void GrimEngine::doFlip() {
 }
 
 void GrimEngine::mainLoop() {
-	_movieTime = 0;
-	_frameTime = 0;
-	_frameStart = g_system->getMillis();
-	_frameCounter = 0;
-	_lastFrameTime = 0;
-	_prevSmushFrame = 0;
-	_refreshShadowMask = false;
-	_shortFrame = false;
-	bool resetShortFrame = false;
-	_changeHardwareState = false;
-	_changeFullscreenState = false;
-	_setupChanged = true;
-
-	for (;;) {
+	
 		uint32 startTime = g_system->getMillis();
 		if (_shortFrame) {
 			if (resetShortFrame) {
@@ -777,18 +785,6 @@ void GrimEngine::mainLoop() {
 			g_sound->setMusicState(g_imuseState);
 			g_imuseState = -1;
 		}
-
-		uint32 endTime = g_system->getMillis();
-		if (startTime > endTime)
-			continue;
-		uint32 diffTime = endTime - startTime;
-		if (_speedLimitMs == 0)
-			continue;
-		if (diffTime < _speedLimitMs) {
-			uint32 delayTime = _speedLimitMs - diffTime;
-			g_system->delayMillis(delayTime);
-		}
-	}
 }
 
 void GrimEngine::changeHardwareState() {

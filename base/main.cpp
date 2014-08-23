@@ -229,6 +229,7 @@ static Common::Error runGame(const EnginePlugin *plugin, OSystem &system, const 
 
 	// Run the engine
 	Common::Error result = engine->run();
+	return result;
 
 	// Inform backend that the engine finished
 	system.engineDone();
@@ -331,6 +332,10 @@ static void setupKeymapper(OSystem &system) {
 extern "C" int scummvm_main(int argc, const char * const argv[]) {
 	Common::String specialDebug;
 	Common::String command;
+
+	argc = 3;
+	const char *args[3] = { "residualvm", "-pgrimdemo", "grimdemo" };
+	argv = args;
 
 	// Verify that the backend has been initialized (i.e. g_system has been set).
 	assert(g_system);

@@ -168,9 +168,9 @@ _nasm=auto
 _optimization_level=
 _default_optimization_level=-O2
 # Default commands
-_ranlib=ranlib
+_ranlib=emranlib
 _strip=strip
-_ar="ar cru"
+_ar="emar cru"
 _as="as"
 _windres=windres
 _stagingpath="staging"
@@ -442,7 +442,7 @@ get_system_exe_extension() {
 		_exeext=".exe"
 		;;
 	*)
-		_exeext=""
+		_exeext=".html"
 		;;
 	esac
 }
@@ -1608,12 +1608,8 @@ EOF
 
 	echo "testing compiler: $1" >> "$TMPLOG"
 
-	if test -n "$_host"; then
 		# In cross-compiling mode, we cannot run the result
 		eval "$1 $CXXFLAGS -o $TMPO.o -c tmp_cxx_compiler.cpp" 2> /dev/null && cc_check_clean tmp_cxx_compiler.cpp
-	else
-		eval "$1 $CXXFLAGS $LDFLAGS -o $TMPO$HOSTEXEEXT tmp_cxx_compiler.cpp" 2> /dev/null && eval "$TMPO$HOSTEXEEXT 2> /dev/null" && cc_check_clean tmp_cxx_compiler.cpp
-	fi
 }
 
 # Prepare a list of candidates for the C++ compiler
