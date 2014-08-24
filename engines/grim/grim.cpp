@@ -363,7 +363,8 @@ Common::Error GrimEngine::run() {
 	_changeFullscreenState = false;
 	_setupChanged = true;
 
-	emscripten_set_main_loop(staticmainLoop, 60, 1);
+	emscripten_set_main_loop(staticmainLoop, 30, 1);
+//	emscripten_async_call(staticmainLoop, 0, 1);
 
 	return Common::kNoError;
 }
@@ -659,7 +660,6 @@ void GrimEngine::doFlip() {
 
 void GrimEngine::mainLoop() {
 	
-		uint32 startTime = g_system->getMillis();
 		if (_shortFrame) {
 			if (resetShortFrame) {
 				_shortFrame = false;
@@ -716,7 +716,7 @@ void GrimEngine::mainLoop() {
 			g_imuse->refreshScripts();
 		}
 
-		_debugger->onFrame();
+		//_debugger->onFrame();
 
 		// Process events
 		Common::Event event;

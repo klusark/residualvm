@@ -480,6 +480,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 #endif
 			// Try to run the game
 			Common::Error result = runGame(plugin, system, specialDebug);
+			return 0;
 
 #ifdef ENABLE_EVENTRECORDER
 			// Flush Event recorder file. The recorder does not get reinitialized for next game

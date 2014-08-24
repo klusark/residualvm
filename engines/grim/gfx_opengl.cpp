@@ -51,6 +51,7 @@
 #include "engines/grim/emi/modelemi.h"
 #include "engines/grim/registry.h"
 
+#undef GL_ARB_fragment_program
 
 #if defined (SDL_BACKEND) && defined(GL_ARB_fragment_program)
 
@@ -114,8 +115,6 @@ GfxOpenGL::GfxOpenGL() : _smushNumTex(0),
 GfxOpenGL::~GfxOpenGL() {
 	delete[] _storedDisplay;
 
-	if (_emergFont && glIsList(_emergFont))
-		glDeleteLists(_emergFont, 128);
 
 #ifdef GL_ARB_fragment_program
 	if (_useDepthShader)
@@ -377,8 +376,8 @@ void GfxOpenGL::getScreenBoundingBox(const Mesh *model, int *x1, int *y1, int *x
 			GLdouble modelView[16], projection[16];
 			GLint viewPort[4];
 
-			glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
-			glGetDoublev(GL_PROJECTION_MATRIX, projection);
+			//glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
+			//glGetDoublev(GL_PROJECTION_MATRIX, projection);
 			glGetIntegerv(GL_VIEWPORT, viewPort);
 
 			pVertices = model->_vertices + 3 * model->_faces[i].getVertex(j);
@@ -443,8 +442,8 @@ void GfxOpenGL::getScreenBoundingBox(const EMIModel *model, int *x1, int *y1, in
 	GLdouble modelView[16], projection[16];
 	GLint viewPort[4];
 
-	glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
-	glGetDoublev(GL_PROJECTION_MATRIX, projection);
+	//glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
+	//glGetDoublev(GL_PROJECTION_MATRIX, projection);
 	glGetIntegerv(GL_VIEWPORT, viewPort);
 
 	for (uint i = 0; i < model->_numFaces; i++) {
@@ -513,8 +512,8 @@ void GfxOpenGL::getActorScreenBBox(const Actor *actor, Common::Point &p1, Common
 	// Get the current OpenGL state
 	GLdouble modelView[16], projection[16];
 	GLint viewPort[4];
-	glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
-	glGetDoublev(GL_PROJECTION_MATRIX, projection);
+	//glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
+	//glGetDoublev(GL_PROJECTION_MATRIX, projection);
 	glGetIntegerv(GL_VIEWPORT, viewPort);
 
 	// Set values outside of the screen range
@@ -775,7 +774,7 @@ void GfxOpenGL::drawEMIModelFace(const EMIModel *model, const EMIMeshFace *face)
 		Math::Vector3d normal = model->_normals[index];
 		Math::Vector3d vertex = model->_drawVertices[index];
 
-		glNormal3fv(normal.getData());
+		//glNormal3fv(normal.getData());
 		glVertex3fv(vertex.getData());
 	}
 	glEnd();
@@ -802,10 +801,10 @@ void GfxOpenGL::drawModelFace(const Mesh *mesh, const MeshFace *face) {
 	float *textureVerts = mesh->_textureVerts;
 	glAlphaFunc(GL_GREATER, 0.5);
 	glEnable(GL_ALPHA_TEST);
-	glNormal3fv(face->getNormal().getData());
+	//glNormal3fv(face->getNormal().getData());
 	glBegin(GL_POLYGON);
 	for (int i = 0; i < face->getNumVertices(); i++) {
-		glNormal3fv(vertNormals + 3 * face->getVertex(i));
+		//glNormal3fv(vertNormals + 3 * face->getVertex(i));
 
 		if (face->hasTexture())
 			glTexCoord2fv(textureVerts + 2 * face->getTextureVertex(i));
@@ -825,7 +824,7 @@ void GfxOpenGL::drawSprite(const Sprite *sprite) {
 
 	if (g_grim->getGameType() == GType_MONKEY4) {
 		GLdouble modelview[16];
-		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		//glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
 		Math::Matrix4 act;
 		act.buildAroundZ(_currentActor->getYaw());
 		act.transpose();
@@ -837,7 +836,7 @@ void GfxOpenGL::drawSprite(const Sprite *sprite) {
 	} else {
 		glTranslatef(sprite->_pos.x(), sprite->_pos.y(), sprite->_pos.z());
 		GLdouble modelview[16];
-		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		//glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
 
 		// We want screen-aligned sprites so reset the rotation part of the matrix.
 		for (int i = 0; i < 3; i++) {
@@ -1004,9 +1003,9 @@ void GfxOpenGL::setupLight(Light *light, int lightId) {
 	glLightfv(GL_LIGHT0 + lightId, GL_SPECULAR, specular);
 	glLightfv(GL_LIGHT0 + lightId, GL_POSITION, lightPos);
 	glLightfv(GL_LIGHT0 + lightId, GL_SPOT_DIRECTION, lightDir);
-	glLightf(GL_LIGHT0 + lightId, GL_SPOT_EXPONENT, spot_exp);
+	/*glLightf(GL_LIGHT0 + lightId, GL_SPOT_EXPONENT, spot_exp);
 	glLightf(GL_LIGHT0 + lightId, GL_SPOT_CUTOFF, cutoff);
-	glLightf(GL_LIGHT0 + lightId, GL_QUADRATIC_ATTENUATION, 0.2f);
+	glLightf(GL_LIGHT0 + lightId, GL_QUADRATIC_ATTENUATION, 0.2f);*/
 	glEnable(GL_LIGHT0 + lightId);
 }
 
@@ -1543,10 +1542,10 @@ void GfxOpenGL::drawDepthBitmap(int x, int y, int w, int h, char *data) {
 	//}
 
 	if (y + h == 480) {
-		glRasterPos2i(x, _screenHeight - 1);
-		glBitmap(0, 0, 0, 0, 0, -1, nullptr);
+		//glRasterPos2i(x, _screenHeight - 1);
+		//glBitmap(0, 0, 0, 0, 0, -1, nullptr);
 	} else
-		glRasterPos2i(x, y + h);
+		//glRasterPos2i(x, y + h);
 
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_DEPTH_TEST);
@@ -1555,7 +1554,7 @@ void GfxOpenGL::drawDepthBitmap(int x, int y, int w, int h, char *data) {
 	glDepthMask(GL_TRUE);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 2); // 16 bit Z depth bitmap
 
-	glDrawPixels(w, h, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, data);
+	//glDrawPixels(w, h, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, data);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -1665,37 +1664,9 @@ void GfxOpenGL::releaseMovieFrame() {
 }
 
 void GfxOpenGL::loadEmergFont() {
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // 8 bit font bitmaps
-
-	_emergFont = glGenLists(128);
-	for (int i = 32; i < 127; i++) {
-		glNewList(_emergFont + i, GL_COMPILE);
-		glBitmap(8, 13, 0, 2, 10, 0, Font::emerFont[i - 32]);
-		glEndList();
-	}
 }
 
 void GfxOpenGL::drawEmergString(int x, int y, const char *text, const Color &fgColor) {
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-
-	glRasterPos2i(x, y);
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	glListBase(_emergFont);
-	glCallLists(strlen(text), GL_UNSIGNED_BYTE, (const GLubyte *)text);
-
-	glEnable(GL_LIGHTING);
-
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
 }
 
 Bitmap *GfxOpenGL::getScreenshot(int w, int h, bool useStored) {
@@ -1713,23 +1684,6 @@ void GfxOpenGL::storeDisplay() {
 }
 
 void GfxOpenGL::copyStoredToDisplay() {
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, _screenWidth, _screenHeight, 0, 0, 1);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glDisable(GL_LIGHTING);
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-
-	glRasterPos2i(0, _screenHeight - 1);
-	glBitmap(0, 0, 0, 0, 0, -1, nullptr);
-	glDrawPixels(_screenWidth, _screenHeight, GL_RGBA, GL_UNSIGNED_BYTE, _storedDisplay);
-
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
 }
 
 void GfxOpenGL::dimScreen() {
@@ -1834,8 +1788,8 @@ void GfxOpenGL::dimRegion(int x, int yReal, int w, int h, float level) {
 	glDepthMask(GL_FALSE);
 
 	// Set the raster position and draw the bitmap
-	glRasterPos2i(x, yReal + h);
-	glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	//glRasterPos2i(x, yReal + h);
+	//glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);

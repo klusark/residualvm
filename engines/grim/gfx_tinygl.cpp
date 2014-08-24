@@ -78,6 +78,15 @@ byte *GfxTinyGL::setupScreen(int screenW, int screenH, bool fullscreen) {
 	Graphics::PixelBuffer buf = g_system->setupScreen(screenW, screenH, fullscreen, false);
 	byte *buffer = buf.getRawBuffer();
 
+for (int i = 0; i < 256; i++) {
+     for (int j = 0; j < 256; j++) {
+       // alpha component is actually ignored, since this is to the screen
+       *((uint32*)buffer + i * 256 + j) = 0xff00ff;
+     }
+   }
+
+	g_system->updateScreen();
+
 	_screenWidth = screenW;
 	_screenHeight = screenH;
 	_scaleW = _screenWidth / (float)_gameWidth;
@@ -184,6 +193,7 @@ void GfxTinyGL::clearDepthBuffer() {
 
 void GfxTinyGL::flipBuffer() {
 	TinyGL::tglPresentBuffer();
+	g_system->copyShit(_zb->getPixelBuffer());
 	g_system->updateScreen();
 }
 

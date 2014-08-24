@@ -239,11 +239,6 @@ Graphics::PixelBuffer SurfaceSdlGraphicsManager::setupScreen(uint screenW, uint 
 		// apply atribute again for sure based on SDL docs
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-		str = glGetString(GL_VENDOR);
-		debug("INFO: OpenGL Vendor: %s", str);
-		str = glGetString(GL_RENDERER);
-		debug("INFO: OpenGL Renderer: %s", str);
-		str = glGetString(GL_VERSION);
 		debug("INFO: OpenGL Version: %s", str);
 		SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &glflag);
 		debug("INFO: OpenGL Red bits: %d", glflag);
@@ -399,7 +394,7 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 		return;
 
 	// Save current state
-	glPushAttrib(GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_SCISSOR_BIT);
+	//glPushAttrib(GL_TRANSFORM_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_SCISSOR_BIT);
 
 	// prepare view
 	glMatrixMode(GL_PROJECTION);
@@ -451,7 +446,7 @@ void SurfaceSdlGraphicsManager::drawOverlayOpenGL() {
 	glMatrixMode(GL_TEXTURE);
 	glPopMatrix();
 
-	glPopAttrib();
+	//glPopAttrib();
 }
 
 #ifdef USE_OPENGL_SHADERS
